@@ -110,7 +110,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
         for (const endpoint of endpoints) {
           try {
-            const response = await fetch(`${API_URL}/${endpoint.url}`);
+            // === CACHE BUSTER 1: Add ?t=timestamp to bypass Vercel Cache ===
+            const timestamp = new Date().getTime();
+            const response = await fetch(`${API_URL}/${endpoint.url}?t=${timestamp}`, {
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            });
+            
             if (response.ok) {
               const data = await response.json();
               if (Array.isArray(data)) endpoint.setter(data);
@@ -129,9 +138,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const apiRequest = async (endpoint: string, method: string, data?: any) => {
     try {
-      const response = await fetch(`${API_URL}/${endpoint}`, {
+      // === CACHE BUSTER 2: Append timestamp if it is a GET request ===
+      let url = `${API_URL}/${endpoint}`;
+      if (method === 'GET') {
+        const separator = url.includes('?') ? '&' : '?';
+        url = `${url}${separator}t=${new Date().getTime()}`;
+      }
+
+      const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: data ? JSON.stringify(data) : undefined,
       });
 
@@ -210,7 +230,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const newItem = { ...item, totalPrice };
     const res = await apiRequest('deliveries', 'POST', newItem);
     setDeliveries((prev) => [...prev, { ...newItem, id: res.id }]);
-    // Auto-refresh RPCI data when Stock Card changes
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
   };
@@ -224,7 +243,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await apiRequest(`deliveries/${id}`, 'PUT', updatedItem);
       updatedDeliveries[index] = updatedItem;
       setDeliveries(updatedDeliveries);
-      // Auto-refresh RPCI data when Stock Card changes
       const rpciResponse = await apiRequest('rpciRecords', 'GET');
       setRPCIRecords(rpciResponse);
     }
@@ -233,7 +251,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const deleteDelivery = async (id: string) => {
     await apiRequest(`deliveries/${id}`, 'DELETE');
     setDeliveries((prev) => prev.filter((i) => i.id !== id));
-    // Auto-refresh RPCI data when Stock Card changes
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
   };
@@ -262,7 +279,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const addRISRecord = async (record: Omit<RISRecord, 'id'>) => {
     const res = await apiRequest('risRecords', 'POST', record);
     setRISRecords((prev) => [...prev, { ...record, id: res.id }]);
-    // Auto-refresh RPCI data when Stock Card changes
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
   };
@@ -270,7 +286,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const updateRISRecord = async (id: string, record: Partial<RISRecord>) => {
     await apiRequest(`risRecords/${id}`, 'PUT', record);
     setRISRecords((prev) => prev.map((r) => (r.id === id ? { ...r, ...record } : r)));
-    // Auto-refresh RPCI data when Stock Card changes
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
   };
@@ -278,7 +293,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const deleteRISRecord = async (id: string) => {
     await apiRequest(`risRecords/${id}`, 'DELETE');
     setRISRecords((prev) => prev.filter((r) => r.id !== id));
-    // Auto-refresh RPCI data when Stock Card changes
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
   };
@@ -344,7 +358,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const autoGenerateRPCI = async (countDate: string) => {
     await apiRequest('rpciRecords/auto-generate', 'POST', { countDate });
-    // Refresh RPCI records after auto-generation
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
   };
@@ -356,12 +369,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await apiRequest('users', 'POST', user);
       
-      // Verify response structure
-      if (!res) {
-        throw new Error('No response from server');
-      }
-      
-      // Handle response with data wrapper
       const userData = res.data || res.user || {
         id: res.id,
         ...user
@@ -371,7 +378,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Server did not return user ID');
       }
       
-      // Ensure all required fields are present
       const newUser: User = {
         id: userData.id,
         username: userData.username || user.username,
@@ -381,13 +387,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         division: userData.division !== undefined ? userData.division : user.division
       };
       
-      console.log('[DataContext] Adding user to state:', newUser);
-      
-      setUsers((prev) => {
-        const updated = [...prev, newUser];
-        console.log('[DataContext] Users state updated. Total users:', updated.length);
-        return updated;
-      });
+      setUsers((prev) => [...prev, newUser]);
     } catch (error) {
       console.error('[DataContext] Error in addUser:', error);
       throw error;
