@@ -59,6 +59,7 @@ interface DataContextType {
   stockCards: StockCardRecord[];
   addStockCard: (record: Omit<StockCardRecord, 'id'>) => Promise<void>;
   updateStockCard: (id: string, record: Partial<StockCardRecord>) => Promise<void>;
+  deleteStockCard: (id: string) => Promise<void>;
 
   // RPCI Data
   rpciRecords: RPCIRecord[];
@@ -313,6 +314,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setStockCards((prev) => prev.map((r) => (r.id === id ? { ...r, ...record } : r)));
   };
 
+  const deleteStockCard = async (id: string) => {
+    await apiRequest(`stockCards/${id}`, 'DELETE');
+    setStockCards((prev) => prev.filter((r) => r.id !== id));
+  };
+
   // ------------------------------------
   // RPCI Functions
   // ------------------------------------
@@ -414,7 +420,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     iarRecords, addIARRecord, updateIARRecord, deleteIARRecord,
     risRecords, addRISRecord, updateRISRecord, deleteRISRecord,
     rsmiRecords, addRSMIRecord, updateRSMIRecord, deleteRSMIRecord,
-    stockCards, addStockCard, updateStockCard,
+    stockCards, addStockCard, updateStockCard, deleteStockCard,
     rpciRecords, addRPCIRecord, updateRPCIRecord, deleteRPCIRecord, fetchStockCardItemsForRPCI, autoGenerateRPCI,
     users, addUser, updateUser, deleteUser,
   };

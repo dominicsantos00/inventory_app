@@ -5,17 +5,30 @@ import { Label } from '../ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Eye, FileText } from 'lucide-react';
+import { Eye, FileText, Trash2 } from 'lucide-react';
 import { StockCardRecord } from '../../types';
+import { toast } from 'sonner';
 
 export function StockCardSubpage() {
-  const { stockCards } = useData();
+  const { stockCards, deleteStockCard } = useData();
   const [selectedCard, setSelectedCard] = useState<StockCardRecord | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   const viewStockCard = (card: StockCardRecord) => {
     setSelectedCard(card);
     setIsViewDialogOpen(true);
+  };
+
+  const handleDeleteStockCard = async (cardId: string, stockNo: string) => {
+    if (confirm(`Are you sure you want to delete stock card "${stockNo}"? This action cannot be undone.`)) {
+      try {
+        await deleteStockCard(cardId);
+        toast.success('Stock card deleted successfully');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete stock card';
+        toast.error(errorMessage);
+      }
+    }
   };
 
   return (
@@ -65,14 +78,25 @@ export function StockCardSubpage() {
                       </TableCell>
                       <TableCell>{card.transactions?.length || 0}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => viewStockCard(card)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => viewStockCard(card)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteStockCard(card.id, card.stockNo)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

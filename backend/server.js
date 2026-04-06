@@ -1266,6 +1266,29 @@ app.put('/api/stockCards/:id', async (req, res) => {
     }
 });
 
+app.delete('/api/stockCards/:id', async (req, res) => {
+    const { id } = req.params;
+    const connection = await pool.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        // Delete transactions first
+        await connection.query(`DELETE FROM stock_card_transactions WHERE stock_card_id = ?`, [id]);
+        
+        // Delete stock card
+        await connection.query(`DELETE FROM stock_cards WHERE id = ?`, [id]);
+        
+        await connection.commit();
+        res.json({ message: 'Stock card deleted successfully!' });
+    } catch (error) {
+        await connection.rollback();
+        res.status(500).json({ error: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
 // ==========================================
 // RPCI RECORDS API
 // ==========================================
