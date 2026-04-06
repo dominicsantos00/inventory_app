@@ -77,7 +77,7 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/api';
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [ssnItems, setSSNItems] = useState<SSNItem[]>([]);
