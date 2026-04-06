@@ -31,19 +31,26 @@ export function UserManagement() {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingUser) {
-      updateUser(editingUser.id, formData);
-      toast.success('User updated successfully');
-    } else {
-      addUser(formData);
-      toast.success('User created successfully');
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, formData);
+        toast.success('User updated successfully');
+      } else {
+        await addUser(formData);
+        toast.success('User created successfully');
+      }
+      
+      // Only close and reset IF it was actually successful
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      // If it fails (e.g. duplicate username, database error), show the REAL error
+      console.error(error);
+      toast.error(error.message || 'Failed to save user. Please check your data.');
     }
-    
-    setIsDialogOpen(false);
-    resetForm();
   };
 
   const handleEdit = (user: User) => {
