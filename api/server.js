@@ -7,6 +7,15 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// === ADD THIS TO DISABLE VERCEL CACHING ===
+app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+// ==========================================
 // === 1. ADD THIS MOCK AUTH MIDDLEWARE ===
 app.use((req, res, next) => {
     req.user = {
