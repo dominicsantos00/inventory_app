@@ -16,7 +16,9 @@ export function UserManagement() {
   const { users, addUser, updateUser, deleteUser } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [searchTerm, setSearchTerm] = useState(''); // Added search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({
     username: '',
@@ -31,19 +33,60 @@ export function UserManagement() {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Validation function
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.username.trim()) {
+      errors.username = 'Username is required';
+    } else if (formData.username.trim().length < 3) {
+      errors.username = 'Username must be at least 3 characters';
+    }
+
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!formData.email.includes('@')) {
+      errors.email = 'Invalid email format';
+    }
+
+    if (formData.role === 'end-user' && !formData.division.trim()) {
+      errors.division = 'Division is required for End Users';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingUser) {
-      updateUser(editingUser.id, formData);
-      toast.success('User updated successfully');
-    } else {
-      addUser(formData);
-      toast.success('User created successfully');
+    if (!validateForm()) {
+      toast.error('Please fix validation errors');
+      return;
     }
-    
-    setIsDialogOpen(false);
-    resetForm();
+
+    setIsLoading(true);
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, formData);
+        toast.success('User updated successfully');
+      } else {
+        await addUser(formData);
+        toast.success('User created successfully');
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save user';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEdit = (user: User) => {
@@ -125,9 +168,18 @@ export function UserManagement() {
                 <Input
                   id="username"
                   value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
+                  onChange={(e) => {
+                    setFormData({ ...formData, username: e.target.value });
+                    if (validationErrors.username) {
+                      setValidationErrors({ ...validationErrors, username: '' });
+                    }
+                  }}
+                  className={validationErrors.username ? 'border-red-500' : ''}
+                  placeholder="e.g. john.doe"
                 />
+                {validationErrors.username && (
+                  <p className="text-red-500 text-sm">{validationErrors.username}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -135,9 +187,18 @@ export function UserManagement() {
                 <Input
                   id="fullName"
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  required
+                  onChange={(e) => {
+                    setFormData({ ...formData, fullName: e.target.value });
+                    if (validationErrors.fullName) {
+                      setValidationErrors({ ...validationErrors, fullName: '' });
+                    }
+                  }}
+                  className={validationErrors.fullName ? 'border-red-500' : ''}
+                  placeholder="e.g. John Doe"
                 />
+                {validationErrors.fullName && (
+                  <p className="text-red-500 text-sm">{validationErrors.fullName}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -146,9 +207,18 @@ export function UserManagement() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (validationErrors.email) {
+                      setValidationErrors({ ...validationErrors, email: '' });
+                    }
+                  }}
+                  className={validationErrors.email ? 'border-red-500' : ''}
+                  placeholder="e.g. john@denr.gov"
                 />
+                {validationErrors.email && (
+                  <p className="text-red-500 text-sm">{validationErrors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -175,16 +245,28 @@ export function UserManagement() {
                   <Input
                     id="division"
                     value={formData.division}
-                    onChange={(e) => setFormData({ ...formData, division: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, division: e.target.value });
+                      if (validationErrors.division) {
+                        setValidationErrors({ ...validationErrors, division: '' });
+                      }
+                    }}
+                    className={validationErrors.division ? 'border-red-500' : ''}
                     placeholder="e.g., Administrative Division"
-                    required
                   />
+                  {validationErrors.division && (
+                    <p className="text-red-500 text-sm">{validationErrors.division}</p>
+                  )}
                 </div>
               )}
 
               <div className="flex gap-2 pt-4">
-                <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
-                  {editingUser ? 'Update User' : 'Create User'}
+                <Button 
+                  type="submit" 
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : (editingUser ? 'Update User' : 'Create User')}
                 </Button>
                 <Button
                   type="button"

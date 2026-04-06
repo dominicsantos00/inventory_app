@@ -448,13 +448,36 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     const { username, fullName, role, division, email } = req.body;
+    
+    // Validation
+    if (!username || !username.trim()) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+    if (!fullName || !fullName.trim()) {
+        return res.status(400).json({ error: 'Full name is required' });
+    }
+    if (!email || !email.trim()) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+    if (!role) {
+        return res.status(400).json({ error: 'Role is required' });
+    }
+    if (role === 'end-user' && (!division || !division.trim())) {
+        return res.status(400).json({ error: 'Division is required for End Users' });
+    }
+
     const id = Date.now().toString();
     try {
         const query = `INSERT INTO users (id, username, full_name, role, division, email) VALUES (?, ?, ?, ?, ?, ?)`;
-        await pool.query(query, [id, username, fullName, role, division || null, email]);
-        res.json({ message: 'User added successfully!', id });
+        await pool.query(query, [id, username.trim(), fullName.trim(), role, division ? division.trim() : null, email.trim()]);
+        res.json({ message: 'User added successfully!', id, user: { id, username, fullName, role, division, email } });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error creating user:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            res.status(400).json({ error: 'Username or email already exists' });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 

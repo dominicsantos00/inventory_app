@@ -1,7 +1,93 @@
 -- Database Schema for Inventory Management System
 -- Run this script to create all necessary tables
--- Deliveries Table
 
+-- Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(255) PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    division VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_users_username (username),
+    INDEX idx_users_role (role)
+);
+
+-- Deliveries Table
+CREATE TABLE IF NOT EXISTS deliveries (
+    id VARCHAR(255) PRIMARY KEY,
+    type VARCHAR(100),
+    date DATE,
+    po_number VARCHAR(100),
+    po_date DATE,
+    supplier VARCHAR(255),
+    receipt_number VARCHAR(100),
+    item VARCHAR(100),
+    item_description TEXT,
+    unit VARCHAR(50),
+    quantity INT,
+    unit_price DECIMAL(12, 2),
+    total_price DECIMAL(12, 2),
+    remarks TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_deliveries_item (item),
+    INDEX idx_deliveries_date (date)
+);
+
+-- SSN Items Table
+CREATE TABLE IF NOT EXISTS ssn_items (
+    id VARCHAR(255) PRIMARY KEY,
+    code VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    unit VARCHAR(50),
+    category VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- RCC Items Table
+CREATE TABLE IF NOT EXISTS rcc_items (
+    id VARCHAR(255) PRIMARY KEY,
+    code VARCHAR(100) NOT NULL UNIQUE,
+    office_name VARCHAR(255),
+    division_name VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- RIS Records Table
+CREATE TABLE IF NOT EXISTS ris_records (
+    id VARCHAR(255) PRIMARY KEY,
+    ris_no VARCHAR(100) NOT NULL UNIQUE,
+    date DATE,
+    division VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- IAR Records Table
+CREATE TABLE IF NOT EXISTS iar_records (
+    id VARCHAR(255) PRIMARY KEY,
+    iar_no VARCHAR(100) NOT NULL UNIQUE,
+    po_number VARCHAR(100),
+    supplier VARCHAR(255),
+    po_date DATE,
+    invoice_no VARCHAR(100),
+    requisitioning_office VARCHAR(255),
+    responsibility_center_code VARCHAR(100),
+    date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- PO Records Table
+CREATE TABLE IF NOT EXISTS po_records (
+    id VARCHAR(255) PRIMARY KEY,
+    po_no VARCHAR(100) NOT NULL UNIQUE,
+    supplier VARCHAR(255),
+    po_date DATE,
+    invoice_no VARCHAR(100),
+    remarks TEXT,
+    status VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE ris_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

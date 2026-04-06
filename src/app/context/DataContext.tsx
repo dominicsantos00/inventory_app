@@ -347,18 +347,32 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // User Functions
   // ------------------------------------
   const addUser = async (user: Omit<User, 'id'>) => {
-    const res = await apiRequest('users', 'POST', user);
-    setUsers((prev) => [...prev, { ...user, id: res.id }]);
+    try {
+      const res = await apiRequest('users', 'POST', user);
+      // Response includes id and the full user object
+      const newUser = { ...user, id: res.id };
+      setUsers((prev) => [...prev, newUser]);
+    } catch (error) {
+      throw error;
+    }
   };
 
   const updateUser = async (id: string, user: Partial<User>) => {
-    await apiRequest(`users/${id}`, 'PUT', user);
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...user } : u)));
+    try {
+      await apiRequest(`users/${id}`, 'PUT', user);
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...user } : u)));
+    } catch (error) {
+      throw error;
+    }
   };
 
   const deleteUser = async (id: string) => {
-    await apiRequest(`users/${id}`, 'DELETE');
-    setUsers((prev) => prev.filter((u) => u.id !== id));
+    try {
+      await apiRequest(`users/${id}`, 'DELETE');
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch (error) {
+      throw error;
+    }
   };
 
   const value: DataContextType = {
