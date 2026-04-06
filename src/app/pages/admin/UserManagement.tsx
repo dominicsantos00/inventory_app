@@ -23,7 +23,7 @@ export function UserManagement() {
     fullName: '',
     email: '',
     role: 'end-user' as UserRole,
-    division: '',
+    division_id: '',
   });
 
   // Filter users based on username
@@ -60,7 +60,7 @@ export function UserManagement() {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
-      division: user.division || '',
+      division_id: user.division || '',
     });
     setIsDialogOpen(true);
   };
@@ -79,7 +79,7 @@ export function UserManagement() {
       fullName: '',
       email: '',
       role: 'end-user',
-      division: '',
+      division_id: '',
     });
   };
 
@@ -181,8 +181,8 @@ export function UserManagement() {
                   <Label htmlFor="division">Division</Label>
                   <Input
                     id="division"
-                    value={formData.division}
-                    onChange={(e) => setFormData({ ...formData, division: e.target.value })}
+                    value={formData.division_id}
+                    onChange={(e) => setFormData({ ...formData, division_id: e.target.value })}
                     placeholder="e.g., Administrative Division"
                     required
                   />
