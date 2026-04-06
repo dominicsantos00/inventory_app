@@ -7,15 +7,6 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// === ADD THIS TO DISABLE VERCEL CACHING ===
-app.use((req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    next();
-});
-// ==========================================
 // === 1. ADD THIS MOCK AUTH MIDDLEWARE ===
 app.use((req, res, next) => {
     req.user = {
@@ -50,10 +41,11 @@ app.get('/api/auth/verify', (req, res) => {
 });
 
 const pool = mysql.createPool({
-    host: process.env.MYSQLHOST || 'ballast.proxy.rlwy.net',
+    host: process.env.MYSQLHOST || 'localhost',
     user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || 'VZbbuqKfMDwqoMtzFmygbDwBNSlVSfVw',
-    database: process.env.MYSQLDATABASE || 'railway',
+    port: process.env.MYSQLPORT || 3306,
+    password: process.env.MYSQLPASSWORD || '',
+    database: process.env.MYSQLDATABASE || 'inventory_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
