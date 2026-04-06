@@ -450,7 +450,7 @@ app.delete('/api/deliveries/:id', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
     try {
-        const query = `SELECT id, username, full_name AS fullName, role, division, email FROM users`;
+        const query = `SELECT id, username, full_name AS fullName, role, division_id AS division, email FROM users`;
         const [rows] = await pool.query(query);
         res.json(rows);
     } catch (error) {
@@ -485,7 +485,7 @@ app.post('/api/users', async (req, res) => {
         const trimmedEmail = email.trim();
         const trimmedDivision = division ? division.trim() : null;
         
-        const query = `INSERT INTO users (id, username, full_name, role, division, email) VALUES (?, ?, ?, ?, ?, ?)`;
+        const query = `INSERT INTO users (id, username, full_name, role, division_id, email) VALUES (?, ?, ?, ?, ?, ?)`;
         await pool.query(query, [id, trimmedUsername, trimmedFullName, role, trimmedDivision, trimmedEmail]);
         
         // Return complete user object with all fields - 201 Created status
@@ -514,7 +514,7 @@ app.put('/api/users/:id', async (req, res) => {
     const { id } = req.params;
     const { username, fullName, role, division, email } = req.body;
     try {
-        const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division = ?, email = ? WHERE id = ?`;
+        const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ? WHERE id = ?`;
         await pool.query(query, [username, fullName, role, division || null, email, id]);
         res.json({ message: 'User updated successfully!' });
     } catch (error) {
