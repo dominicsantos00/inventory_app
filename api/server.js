@@ -41,11 +41,11 @@ app.get('/api/auth/verify', (req, res) => {
 });
 
 const pool = mysql.createPool({
-    host: process.env.MYSQLHOST || 'localhost',
+    host: process.env.MYSQLHOST || 'ballast.proxy.rlwy.net',
     user: process.env.MYSQLUSER || 'root',
-    port: process.env.MYSQLPORT || 3306,
-    password: process.env.MYSQLPASSWORD || '',
-    database: process.env.MYSQLDATABASE || 'inventory_db',
+    port: process.env.MYSQLPORT || 10627,
+    password: process.env.MYSQLPASSWORD || 'VZbbuqKfMDwqoMtzFmygbDwBNSlVSfVw',
+    database: process.env.MYSQLDATABASE || 'railway',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
