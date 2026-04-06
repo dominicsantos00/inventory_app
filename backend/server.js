@@ -468,11 +468,28 @@ app.post('/api/users', async (req, res) => {
 
     const id = Date.now().toString();
     try {
+        const trimmedUsername = username.trim();
+        const trimmedFullName = fullName.trim();
+        const trimmedEmail = email.trim();
+        const trimmedDivision = division ? division.trim() : null;
+        
         const query = `INSERT INTO users (id, username, full_name, role, division, email) VALUES (?, ?, ?, ?, ?, ?)`;
-        await pool.query(query, [id, username.trim(), fullName.trim(), role, division ? division.trim() : null, email.trim()]);
-        res.json({ message: 'User added successfully!', id, user: { id, username, fullName, role, division, email } });
+        await pool.query(query, [id, trimmedUsername, trimmedFullName, role, trimmedDivision, trimmedEmail]);
+        
+        // Return complete user object with all fields - 201 Created status
+        const newUser = {
+            id,
+            username: trimmedUsername,
+            fullName: trimmedFullName,
+            role,
+            division: trimmedDivision,
+            email: trimmedEmail
+        };
+        
+        console.log('[User Created]', newUser);
+        res.status(201).json({ success: true, data: newUser });
     } catch (error) {
-        console.error('Error creating user:', error);
+        console.error('[User Creation Error]', error);
         if (error.code === 'ER_DUP_ENTRY') {
             res.status(400).json({ error: 'Username or email already exists' });
         } else {

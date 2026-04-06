@@ -20,6 +20,11 @@ export function UserManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
+  // Debug: Log users count whenever it changes
+  React.useEffect(() => {
+    console.log('[UserManagement] Users in context:', users.length, users);
+  }, [users]);
+  
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
@@ -71,18 +76,25 @@ export function UserManagement() {
 
     setIsLoading(true);
     try {
+      console.log('[UserManagement] Submitting form with data:', formData);
+      
       if (editingUser) {
         await updateUser(editingUser.id, formData);
         toast.success('User updated successfully');
       } else {
         await addUser(formData);
+        console.log('[UserManagement] User added, closing dialog and resetting form');
         toast.success('User created successfully');
       }
       
-      setIsDialogOpen(false);
-      resetForm();
+      // Delay closing slightly to ensure state is updated
+      setTimeout(() => {
+        setIsDialogOpen(false);
+        resetForm();
+      }, 200);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save user';
+      console.error('[UserManagement] Error:', errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -286,7 +298,10 @@ export function UserManagement() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>All Users ({filteredUsers.length})</CardTitle>
+          <CardTitle>
+            All Users ({users.length})
+            {filteredUsers.length !== users.length && ` - Filtered: ${filteredUsers.length}`}
+          </CardTitle>
           
           {/* Search Input added here */}
           <div className="relative w-72">

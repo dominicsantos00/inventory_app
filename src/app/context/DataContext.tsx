@@ -349,10 +349,41 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const addUser = async (user: Omit<User, 'id'>) => {
     try {
       const res = await apiRequest('users', 'POST', user);
-      // Response includes id and the full user object
-      const newUser = { ...user, id: res.id };
-      setUsers((prev) => [...prev, newUser]);
+      
+      // Verify response structure
+      if (!res) {
+        throw new Error('No response from server');
+      }
+      
+      // Handle response with data wrapper
+      const userData = res.data || res.user || {
+        id: res.id,
+        ...user
+      };
+      
+      if (!userData.id) {
+        throw new Error('Server did not return user ID');
+      }
+      
+      // Ensure all required fields are present
+      const newUser: User = {
+        id: userData.id,
+        username: userData.username || user.username,
+        fullName: userData.fullName || user.fullName,
+        email: userData.email || user.email,
+        role: userData.role || user.role,
+        division: userData.division !== undefined ? userData.division : user.division
+      };
+      
+      console.log('[DataContext] Adding user to state:', newUser);
+      
+      setUsers((prev) => {
+        const updated = [...prev, newUser];
+        console.log('[DataContext] Users state updated. Total users:', updated.length);
+        return updated;
+      });
     } catch (error) {
+      console.error('[DataContext] Error in addUser:', error);
       throw error;
     }
   };
