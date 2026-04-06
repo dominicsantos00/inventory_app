@@ -2,14 +2,10 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from the dist directory (built frontend)
-app.use(express.static(path.join(__dirname, '../dist')));
 
 // Root route for quick status check
 app.get('/', (req, res) => {
@@ -30,13 +26,10 @@ app.get('/api/auth/verify', (req, res) => {
 });
 
 const pool = mysql.createPool({
-    host: process.env.MYSQLHOST || 'localhost',
-    user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || '',
-    database: process.env.MYSQLDATABASE || 'inventory_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'inventory_db'
 });
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -448,53 +441,13 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     const { username, fullName, role, division, email } = req.body;
-    
-    // Validation
-    if (!username || !username.trim()) {
-        return res.status(400).json({ error: 'Username is required' });
-    }
-    if (!fullName || !fullName.trim()) {
-        return res.status(400).json({ error: 'Full name is required' });
-    }
-    if (!email || !email.trim()) {
-        return res.status(400).json({ error: 'Email is required' });
-    }
-    if (!role) {
-        return res.status(400).json({ error: 'Role is required' });
-    }
-    if (role === 'end-user' && (!division || !division.trim())) {
-        return res.status(400).json({ error: 'Division is required for End Users' });
-    }
-
     const id = Date.now().toString();
     try {
-        const trimmedUsername = username.trim();
-        const trimmedFullName = fullName.trim();
-        const trimmedEmail = email.trim();
-        const trimmedDivision = division ? division.trim() : null;
-        
         const query = `INSERT INTO users (id, username, full_name, role, division, email) VALUES (?, ?, ?, ?, ?, ?)`;
-        await pool.query(query, [id, trimmedUsername, trimmedFullName, role, trimmedDivision, trimmedEmail]);
-        
-        // Return complete user object with all fields - 201 Created status
-        const newUser = {
-            id,
-            username: trimmedUsername,
-            fullName: trimmedFullName,
-            role,
-            division: trimmedDivision,
-            email: trimmedEmail
-        };
-        
-        console.log('[User Created]', newUser);
-        res.status(201).json({ success: true, data: newUser });
+        await pool.query(query, [id, username, fullName, role, division || null, email]);
+        res.json({ message: 'User added successfully!', id });
     } catch (error) {
-        console.error('[User Creation Error]', error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            res.status(400).json({ error: 'Username or email already exists' });
-        } else {
-            res.status(500).json({ error: error.message });
-        }
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -1266,29 +1219,6 @@ app.put('/api/stockCards/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/stockCards/:id', async (req, res) => {
-    const { id } = req.params;
-    const connection = await pool.getConnection();
-    
-    try {
-        await connection.beginTransaction();
-        
-        // Delete transactions first
-        await connection.query(`DELETE FROM stock_card_transactions WHERE stock_card_id = ?`, [id]);
-        
-        // Delete stock card
-        await connection.query(`DELETE FROM stock_cards WHERE id = ?`, [id]);
-        
-        await connection.commit();
-        res.json({ message: 'Stock card deleted successfully!' });
-    } catch (error) {
-        await connection.rollback();
-        res.status(500).json({ error: error.message });
-    } finally {
-        connection.release();
-    }
-});
-
 // ==========================================
 // RPCI RECORDS API
 // ==========================================
@@ -1608,56 +1538,7 @@ app.delete('/api/rpciRecords/:id', async (req, res) => {
     }
 });
 
-// SPA fallback: serve index.html for any unmatched routes (for client-side routing)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
-        if (err) {
-            res.status(404).json({ error: 'Not found' });
-        }
-    });
-});
-
-// Initialize sample data
-async function initializeDatabase() {
-    const connection = await pool.getConnection();
-    try {
-        // Check if deliveries table is empty
-        const [deliveries] = await connection.query('SELECT COUNT(*) as count FROM deliveries');
-        if (deliveries[0].count === 0) {
-            console.log('Loading sample data...');
-            
-            // Insert sample data
-            const sampleDeliveries = [
-                ['DEL-001', 'Office Supplies', '2026-03-15', 'PO-2026-001', '2026-03-10', 'ABC Supplies Co.', 'REC-001', 'OS-001', 'Bond Paper A4', 'ream', 50, 120.00, 6000.00, null],
-                ['DEL-002', 'Office Supplies', '2026-03-16', 'PO-2026-002', '2026-03-11', 'XYZ Trading', 'REC-002', 'OS-003', 'Ballpen Black', 'piece', 200, 12.00, 2400.00, null],
-                ['DEL-003', 'Office Supplies', '2026-03-17', 'PO-2026-003', '2026-03-12', 'ABC Supplies Co.', 'REC-003', 'OS-004', 'Neon Highlighter', 'Set (3 piece/Set)', 100, 85.00, 8500.00, null],
-                ['DEL-004', 'Equipment', '2026-03-18', 'PO-2026-004', '2026-03-13', 'Tech Solutions', 'REC-004', 'EQ-001', 'Desktop Computer', 'unit', 5, 35000.00, 175000.00, null],
-                ['DEL-005', 'Office Supplies', '2026-03-19', 'PO-2026-005', '2026-03-14', 'XYZ Trading', 'REC-005', 'OS-005', 'Manila Folder', 'piece', 300, 8.00, 2400.00, null]
-            ];
-            
-            for (const delivery of sampleDeliveries) {
-                await connection.query(
-                    'INSERT IGNORE INTO deliveries (id, type, date, po_number, po_date, supplier, receipt_number, item, item_description, unit, quantity, unit_price, total_price, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    delivery
-                );
-            }
-            
-            console.log('Sample data loaded successfully!');
-        }
-    } catch (error) {
-        console.error('Error initializing database:', error.message);
-    } finally {
-        connection.release();
-    }
-}
-
 // Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
-    try {
-        await initializeDatabase();
-    } catch (error) {
-        console.error('Database initialization failed:', error.message);
-    }
+app.listen(5000, () => {
+    console.log('Backend server running on http://localhost:5000');
 });

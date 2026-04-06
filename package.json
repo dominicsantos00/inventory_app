@@ -3,15 +3,11 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "engines": {
-    "node": "20.x"
-  },
   "scripts": {
     "build": "vite build",
     "dev": "vite",
     "server": "node backend/server.js",
     "backend": "npm --prefix backend run start",
-    "start": "npm run build && node backend/server.js",
     "postinstall": "npm --prefix backend install"
   },
   "dependencies": {
