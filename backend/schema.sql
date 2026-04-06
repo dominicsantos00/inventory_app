@@ -1,119 +1,9 @@
 -- Database Schema for Inventory Management System
 -- Run this script to create all necessary tables
-
-CREATE DATABASE IF NOT EXISTS inventory_db;
-USE inventory_db;
-
 -- Deliveries Table
-CREATE TABLE IF NOT EXISTS deliveries (
-    id VARCHAR(255) PRIMARY KEY,
-    type VARCHAR(255) NOT NULL,
-    date DATE NOT NULL,
-    po_number VARCHAR(255),
-    po_date DATE,
-    supplier VARCHAR(255),
-    receipt_number VARCHAR(255),
-    item VARCHAR(255) NOT NULL,
-    item_description TEXT,
-    unit VARCHAR(50),
-    quantity INT,
-    unit_price DECIMAL(10, 2),
-    total_price DECIMAL(10, 2),
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
--- Users Table
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(255) PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    full_name VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL,
-    division VARCHAR(255),
-    email VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
--- SSN Items Table
-CREATE TABLE IF NOT EXISTS ssn_items (
-    id VARCHAR(255) PRIMARY KEY,
-    code VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    unit VARCHAR(50),
-    category VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- RCC Items Table
-CREATE TABLE IF NOT EXISTS rcc_items (
-    id VARCHAR(255) PRIMARY KEY,
-    code VARCHAR(255) NOT NULL,
-    office_name VARCHAR(255) NOT NULL,
-    division_name VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Purchase Orders Table
-CREATE TABLE IF NOT EXISTS po_records (
-    id VARCHAR(255) PRIMARY KEY,
-    po_no VARCHAR(255) NOT NULL UNIQUE,
-    supplier VARCHAR(255) NOT NULL,
-    po_date DATE NOT NULL,
-    invoice_no VARCHAR(255),
-    remarks TEXT,
-    status VARCHAR(50) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- IAR Records Table
-CREATE TABLE IF NOT EXISTS iar_records (
-    id VARCHAR(255) PRIMARY KEY,
-    iar_no VARCHAR(255) NOT NULL,
-    po_number VARCHAR(255),
-    supplier VARCHAR(255),
-    po_date DATE,
-    invoice_no VARCHAR(255),
-    requisitioning_office VARCHAR(255),
-    responsibility_center_code VARCHAR(255),
-    items JSON,
-    date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS iar_items (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    iar_record_id VARCHAR(255) NOT NULL,
-    stock_no VARCHAR(255),
-    description TEXT NOT NULL,
-    unit VARCHAR(50),
-    quantity INT NOT NULL,
-    unit_cost DECIMAL(12, 2) NOT NULL,
-    total_cost DECIMAL(12, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_iar_items_record_id (iar_record_id),
-    CONSTRAINT fk_iar_items_record FOREIGN KEY (iar_record_id) REFERENCES iar_records(id) ON DELETE CASCADE
-);
-
--- RIS Records Table
-CREATE TABLE IF NOT EXISTS ris_records (
-    id VARCHAR(255) PRIMARY KEY,
-    ris_no VARCHAR(255) NOT NULL,
-    division VARCHAR(255),
-    responsibility_center_code VARCHAR(255),
-    date DATE,
-    requested_by VARCHAR(255),
-    requesting_office VARCHAR(255),
-    request_date DATE,
-    items JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Add missing columns to ris_records if they don't exist
-ALTER TABLE ris_records ADD COLUMN IF NOT EXISTS requested_by VARCHAR(255);
-ALTER TABLE ris_records ADD COLUMN IF NOT EXISTS requesting_office VARCHAR(255);
-ALTER TABLE ris_records ADD COLUMN IF NOT EXISTS request_date DATE;
-
-CREATE TABLE IF NOT EXISTS ris_items (
+CREATE TABLE ris_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ris_record_id VARCHAR(255) NOT NULL,
     stock_no VARCHAR(255) NOT NULL,
@@ -129,7 +19,7 @@ CREATE TABLE IF NOT EXISTS ris_items (
 );
 
 -- RSMI Records Table
-CREATE TABLE IF NOT EXISTS rsmi_records (
+CREATE TABLE rsmi_records (
     id VARCHAR(255) PRIMARY KEY,
     report_no VARCHAR(255) NOT NULL,
     period VARCHAR(255),
@@ -141,7 +31,7 @@ CREATE TABLE IF NOT EXISTS rsmi_records (
     INDEX idx_rsmi_source_ris (source_ris_number)
 );
 
-CREATE TABLE IF NOT EXISTS rsmi_items (
+CREATE TABLE rsmi_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     rsmi_record_id VARCHAR(255) NOT NULL,
     stock_no VARCHAR(255) NOT NULL,
@@ -158,7 +48,7 @@ CREATE TABLE IF NOT EXISTS rsmi_items (
 );
 
 -- Stock Cards Table
-CREATE TABLE IF NOT EXISTS stock_cards (
+CREATE TABLE stock_cards (
     id VARCHAR(255) PRIMARY KEY,
     stock_no VARCHAR(255) NOT NULL,
     description TEXT,
@@ -170,7 +60,7 @@ CREATE TABLE IF NOT EXISTS stock_cards (
 );
 
 DROP TABLE IF EXISTS stock_card_transactions;
-CREATE TABLE IF NOT EXISTS stock_card_transactions (
+CREATE TABLE stock_card_transactions (
     id VARCHAR(255) PRIMARY KEY,
     stock_card_id VARCHAR(255) NOT NULL,
     date DATE NOT NULL,
@@ -186,7 +76,7 @@ CREATE TABLE IF NOT EXISTS stock_card_transactions (
 );
 
 -- RPCI Records Table
-CREATE TABLE IF NOT EXISTS rpci_records (
+CREATE TABLE rpci_records (
     id VARCHAR(255) PRIMARY KEY,
     report_no VARCHAR(255) NOT NULL,
     count_date DATE,
@@ -194,7 +84,7 @@ CREATE TABLE IF NOT EXISTS rpci_records (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS rpci_items (
+CREATE TABLE rpci_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     rpci_record_id VARCHAR(255) NOT NULL,
     stock_no VARCHAR(255) NOT NULL,
