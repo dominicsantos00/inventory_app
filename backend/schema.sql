@@ -132,7 +132,7 @@ INSERT IGNORE INTO iar_records (id, iar_no, po_number, supplier, po_date, invoic
 ('IAR-002', 'IAR-2026-002', 'PO-2026-002', 'XYZ Trading', '2026-03-11', 'INV-002', 'Provincial Office', 'RCC-002', '2026-03-16'),
 ('IAR-003', 'IAR-2026-003', 'PO-2026-004', 'Tech Solutions', '2026-03-13', 'INV-003', 'Regional Office', 'RCC-001', '2026-03-18');
 
-INSERT IGNORE INTO ris_records (id, ris_no, division, responsibility_center_code, date, requested_by, requesting_office, request_date) VALUES
+INSERT IGNORE INTO ris_records (id, ris_no, division_id, responsibility_center_code, date, requested_by, requesting_office, request_date) VALUES
 ('RIS-001', 'RIS-2026-001', 'Finance', 'RCC-001', '2026-03-20', 'admin', 'Regional Office', '2026-03-20'),
 ('RIS-002', 'RIS-2026-002', 'Operations', 'RCC-002', '2026-03-21', 'user1', 'Provincial Office', '2026-03-21'),
 ('RIS-003', 'RIS-2026-003', 'Finance', 'RCC-001', '2026-03-22', 'user2', 'District Office', '2026-03-22');
