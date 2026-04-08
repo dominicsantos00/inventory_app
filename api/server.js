@@ -735,7 +735,7 @@ app.get('/api/risRecords', async (req, res) => {
         
         // Get RIS records for user's division only
         const [records] = await pool.query(`
-            SELECT id, ris_no AS risNo, division_id AS division, responsibility_center_code AS responsibilityCenterCode, 
+            SELECT id, ris_no AS risNo, division, responsibility_center_code AS responsibilityCenterCode, 
             DATE_FORMAT(date, '%Y-%m-%d') AS date, requested_by AS requestedBy, requesting_office AS requestingOffice,
             DATE_FORMAT(request_date, '%Y-%m-%d') AS requestDate 
             FROM ris_records 
@@ -823,10 +823,10 @@ app.post('/api/risRecords', async (req, res) => {
             });
         }
 
-        // Save RIS record
+        // Save RIS record with division_id
         await connection.query(
-            `INSERT INTO ris_records (id, ris_no, division_id, responsibility_center_code, date, requested_by, requesting_office, request_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, risNo, division, responsibilityCenterCode, date, requestedBy || null, requestingOffice || null, requestDate || null]
+            `INSERT INTO ris_records (id, ris_no, division, responsibility_center_code, date, requested_by, requesting_office, request_date, division_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, risNo, division, responsibilityCenterCode, date, requestedBy || null, requestingOffice || null, requestDate || null, userDivisionId]
         );
 
         const childValues = normalizedItems.map((i) => [id, i.stockNo, i.description, i.unit, i.quantityRequested, i.quantityIssued, i.remarks]);
@@ -861,7 +861,11 @@ app.post('/api/risRecords', async (req, res) => {
             items: normalizedItems,
         });
 
-        // RSMI record created successfully
+        // Update RSMI with division_id
+        await connection.query(
+            `UPDATE rsmi_records SET division_id = ? WHERE id = ?`,
+            [userDivisionId, rsmiId]
+        );
 
         await connection.commit();
         
@@ -889,7 +893,7 @@ app.put('/api/risRecords/:id', async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
-        // Verify RIS record exists
+        // Verify user owns this RIS record
         const [ris] = await connection.query(
             'SELECT division_id FROM ris_records WHERE id = ?',
             [id]
@@ -897,6 +901,10 @@ app.put('/api/risRecords/:id', async (req, res) => {
         
         if (ris.length === 0) {
             return res.status(404).json({ error: 'RIS record not found' });
+        }
+        
+        if (ris[0].division_id !== userDivisionId) {
+            return res.status(403).json({ error: 'You can only update your own RIS records' });
         }
 
         // Only allow updating these fields to maintain stock-card audit integrity
@@ -923,7 +931,7 @@ app.delete('/api/risRecords/:id', async (req, res) => {
 
         // 1. Fetch RIS record
         const [risRecords] = await connection.query(
-            `SELECT id, ris_no, division_id, date FROM ris_records WHERE id = ?`,
+            `SELECT id, ris_no, division, date, division_id FROM ris_records WHERE id = ?`,
             [id]
         );
 
@@ -933,6 +941,12 @@ app.delete('/api/risRecords/:id', async (req, res) => {
         }
 
         const risRecord = risRecords[0];
+        
+        // Verify user owns this RIS record
+        if (risRecord.division_id !== userDivisionId) {
+            await connection.rollback();
+            return res.status(403).json({ error: 'You can only delete your own RIS records' });
+        }
 
         // 2. Fetch all RIS items
         const [risItems] = await connection.query(
