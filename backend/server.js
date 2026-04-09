@@ -483,7 +483,7 @@ app.delete('/api/deliveries/:id', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
     try {
-        const query = `SELECT id, username, full_name AS fullName, role, division, email FROM users`;
+        const query = `SELECT id, username, full_name AS fullName, role, division_id AS division, email FROM users`;
         const [rows] = await pool.query(query);
         res.json(rows);
     } catch (error) {
@@ -492,46 +492,37 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.post('/api/users', async (req, res) => {
-    const { username, fullName, role, division, email } = req.body;
+    // ADDED: Destructure password
+    const { username, fullName, role, division, email, password } = req.body; 
     
     // Validation
-    if (!username || !username.trim()) {
-        return res.status(400).json({ error: 'Username is required' });
-    }
-    if (!fullName || !fullName.trim()) {
-        return res.status(400).json({ error: 'Full name is required' });
-    }
-    if (!email || !email.trim()) {
-        return res.status(400).json({ error: 'Email is required' });
-    }
-    if (!role) {
-        return res.status(400).json({ error: 'Role is required' });
-    }
+    if (!username || !username.trim()) return res.status(400).json({ error: 'Username is required' });
+    if (!fullName || !fullName.trim()) return res.status(400).json({ error: 'Full name is required' });
+    if (!email || !email.trim()) return res.status(400).json({ error: 'Email is required' });
+    if (!password) return res.status(400).json({ error: 'Password is required' }); // ADDED: Password check
+    if (!role) return res.status(400).json({ error: 'Role is required' });
     if (role === 'end-user' && (!division || !division.trim())) {
         return res.status(400).json({ error: 'Division is required for End Users' });
     }
 
     const id = Date.now().toString();
     try {
+        // ADDED: Hash the password securely using bcrypt
+        const hashedPassword = await bcrypt.hash(password, 12); 
+
         const trimmedUsername = username.trim();
         const trimmedFullName = fullName.trim();
         const trimmedEmail = email.trim();
         const trimmedDivision = division ? division.trim() : null;
         
-        const query = `INSERT INTO users (id, username, full_name, role, division, email) VALUES (?, ?, ?, ?, ?, ?)`;
-        await pool.query(query, [id, trimmedUsername, trimmedFullName, role, trimmedDivision, trimmedEmail]);
+        // ADDED: Insert the hashed password into the database
+        const query = `INSERT INTO users (id, username, full_name, role, division_id, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        await pool.query(query, [id, trimmedUsername, trimmedFullName, role, trimmedDivision, trimmedEmail, hashedPassword]);
         
-        // Return complete user object with all fields - 201 Created status
         const newUser = {
-            id,
-            username: trimmedUsername,
-            fullName: trimmedFullName,
-            role,
-            division: trimmedDivision,
-            email: trimmedEmail
+            id, username: trimmedUsername, fullName: trimmedFullName, role, division: trimmedDivision, email: trimmedEmail
         };
         
-        console.log('[User Created]', newUser);
         res.status(201).json({ success: true, data: newUser });
     } catch (error) {
         console.error('[User Creation Error]', error);
@@ -545,10 +536,19 @@ app.post('/api/users', async (req, res) => {
 
 app.put('/api/users/:id', async (req, res) => {
     const { id } = req.params;
-    const { username, fullName, role, division, email } = req.body;
+    // ADDED: Destructure password
+    const { username, fullName, role, division, email, password } = req.body; 
     try {
-        const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division = ?, email = ? WHERE id = ?`;
-        await pool.query(query, [username, fullName, role, division || null, email, id]);
+        if (password && password.trim() !== '') {
+            // ADDED: If the admin typed a new password, hash it and update the password column
+            const hashedPassword = await bcrypt.hash(password, 12);
+            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ?, password = ? WHERE id = ?`;
+            await pool.query(query, [username, fullName, role, division || null, email, hashedPassword, id]);
+        } else {
+            // ADDED: If the password field was left blank, update everything else but leave the old password alone
+            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ? WHERE id = ?`;
+            await pool.query(query, [username, fullName, role, division || null, email, id]);
+        }
         res.json({ message: 'User updated successfully!' });
     } catch (error) {
         res.status(500).json({ error: error.message });

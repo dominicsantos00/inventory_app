@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
-import { Plus, Edit, Trash2, Search } from 'lucide-react'; // Added Search icon
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { User, UserRole } from '../../types';
 import { toast } from 'sonner';
 
@@ -16,17 +16,18 @@ export function UserManagement() {
   const { users, addUser, updateUser, deleteUser } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [searchTerm, setSearchTerm] = useState(''); // Added search state
+  const [searchTerm, setSearchTerm] = useState(''); 
   
+  // ADDED: password to formData state
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
     email: '',
+    password: '', 
     role: 'end-user' as UserRole,
     division_id: '',
   });
 
-  // Filter users based on username
   const filteredUsers = users.filter((user) =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -43,11 +44,9 @@ export function UserManagement() {
         toast.success('User created successfully');
       }
       
-      // Only close and reset IF it was actually successful
       setIsDialogOpen(false);
       resetForm();
     } catch (error: any) {
-      // If it fails (e.g. duplicate username, database error), show the REAL error
       console.error(error);
       toast.error(error.message || 'Failed to save user. Please check your data.');
     }
@@ -59,6 +58,7 @@ export function UserManagement() {
       username: user.username,
       fullName: user.fullName,
       email: user.email,
+      password: '', // ADDED: Always clear password field on edit so we don't accidentally overwrite it
       role: user.role,
       division_id: user.division || '',
     });
@@ -78,6 +78,7 @@ export function UserManagement() {
       username: '',
       fullName: '',
       email: '',
+      password: '', // ADDED: reset password
       role: 'end-user',
       division_id: '',
     });
@@ -158,6 +159,22 @@ export function UserManagement() {
                 />
               </div>
 
+              {/* ADDED: Password Input Field */}
+              <div className="space-y-2">
+                <Label htmlFor="password">
+                  Password 
+                  {editingUser && <span className="text-xs font-normal text-gray-500 ml-2">(Leave blank to keep unchanged)</span>}
+                </Label>
+                <Input
+                  id="password"
+                  type="text" 
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={!editingUser} // Only required when creating a new user
+                  placeholder={editingUser ? "Leave blank to keep current password" : "Enter a secure password"}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="role">Access Level</Label>
                 <Select
@@ -213,7 +230,6 @@ export function UserManagement() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>All Users ({filteredUsers.length})</CardTitle>
           
-          {/* Search Input added here */}
           <div className="relative w-72">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <Input
