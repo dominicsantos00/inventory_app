@@ -3,6 +3,7 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
@@ -27,9 +28,50 @@ app.get('/', (req, res) => {
     res.send('Inventory Management API is running. Try /api/deliveries or /api/users');
 });
 
-// ============ AUTH LOGIN ENDPOINT (DISABLED - Using Mock Auth) ============
-app.post('/api/auth/login', (req, res) => {
-    res.status(400).json({ error: 'Mock authentication is used on frontend. Please use frontend login.' });
+// ============ REAL AUTH LOGIN ENDPOINT ============
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    try {
+        const connection = await pool.getConnection();
+        
+        // Search for the user by username OR email
+        const [users] = await connection.query(
+            'SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1', 
+            [username, username]
+        );
+        connection.release();
+
+        if (users.length === 0) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        const user = users[0];
+
+        // Compare the password typed in React with the bcrypt hash in Railway
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        // Remove the password from the object before sending it back to React for security
+        delete user.password;
+
+        // Send success response back to React AuthContext
+        res.status(200).json({
+            user: user,
+            token: 'valid-token' // Placeholder token to satisfy React's login function
+        });
+
+    } catch (error) {
+        console.error('Login Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // ============ AUTH VERIFY ENDPOINT (DISABLED) ============
