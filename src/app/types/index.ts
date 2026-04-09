@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 export type UserRole = 'level1' | 'level2a' | 'level2b' | 'end-user';
 
 export interface User {
