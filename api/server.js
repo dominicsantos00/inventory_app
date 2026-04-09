@@ -74,14 +74,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// ============ AUTH VERIFY ENDPOINT (DISABLED) ============
-app.get('/api/auth/verify', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Mock authentication is enabled'
-    });
-});
-
 const pool = mysql.createPool({
     host: process.env.MYSQLHOST || 'ballast.proxy.rlwy.net',
     user: process.env.MYSQLUSER || 'root',
