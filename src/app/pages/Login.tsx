@@ -11,6 +11,7 @@ export function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -21,16 +22,20 @@ export function Login() {
     usernameRef.current?.focus();
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    const success = login(username, password);
+    const success = await login(username, password);
+    
     if (success) {
       navigate('/dashboard');
     } else {
       setError('Invalid username or password');
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -48,7 +53,6 @@ export function Login() {
           <div className="relative z-10 flex flex-col items-center justify-center flex-grow text-center md:text-left md:items-start">
             {/* Logo Placeholder */}
             <div className="w-32 h-32 bg-white rounded-full mb-8 flex items-center justify-center shadow-2xl p-2">
-               {/* Replace with your actual DENR Logo asset */}
                <img 
                 src="C:\Users\richm\Downloads\Inventory_Management\denr_logo.png" 
                 alt="DENR Logo" 
@@ -96,6 +100,7 @@ export function Login() {
                   placeholder="Enter your username"
                   className="h-12 border-green-200 focus:border-green-500 focus:ring-green-500/50 rounded-lg"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -109,14 +114,16 @@ export function Login() {
                   placeholder="Enter your password"
                   className="h-12 border-green-200 focus:border-green-500 focus:ring-green-500/50 rounded-lg"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-lg"
+                disabled={isLoading}
+                className="w-full h-12 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-lg disabled:opacity-70 disabled:transform-none"
               >
-                Sign In
+                {isLoading ? 'Signing In...' : 'Sign In'}
               </Button>
             </form>
 
