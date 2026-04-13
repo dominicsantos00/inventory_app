@@ -51,6 +51,15 @@ export function Layout(): JSX.Element {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  const pageTitle =
+    (location.pathname === '/dashboard' && 'Dashboard') ||
+    (location.pathname.startsWith('/admin/master-data') && 'Master Data Management') ||
+    (location.pathname.startsWith('/inventory/delivery') && 'Delivery Management') ||
+    (location.pathname.startsWith('/inventory/supplies') && 'Office Supplies') ||
+    (location.pathname.startsWith('/inventory/equipment') && 'Equipment Management') ||
+    (location.pathname.startsWith('/procurement') && 'Procurement Data') ||
+    '';
+
   const canAccessAdmin = user?.role === 'level1';
   const canAccessSupplies = user?.role === 'level1' || user?.role === 'level2a';
   const canAccessEquipment = user?.role === 'level1' || user?.role === 'level2b';
@@ -282,17 +291,11 @@ export function Layout(): JSX.Element {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 max-w-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
-        <header className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 min-w-0">
-          <h2 className="text-3xl font-bold text-gray-800 truncate">
-            {location.pathname === '/dashboard' && 'Dashboard'}
-            {location.pathname.startsWith('/admin/users') && 'User Account Management'}
-            {location.pathname.startsWith('/admin/master-data') && 'Master Data Management'}
-            {location.pathname.startsWith('/inventory/delivery') && 'Delivery Management'}
-            {location.pathname.startsWith('/inventory/supplies') && 'Office'}
-            {location.pathname.startsWith('/inventory/equipment') && 'Equipment Management'}
-            {location.pathname.startsWith('/procurement') && 'Procurement Data'}
-          </h2>
-        </header>
+        {pageTitle && (
+          <header className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 min-w-0">
+            <h2 className="text-3xl font-bold text-gray-800 truncate">{pageTitle}</h2>
+          </header>
+        )}
 
         <main className="flex-1 min-w-0 max-w-full overflow-y-auto overflow-x-hidden p-6 transition-all duration-300 ease-in-out">
           <Outlet context={{ isCollapsed } satisfies OutletContextType} />

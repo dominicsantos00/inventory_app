@@ -125,10 +125,9 @@ export function UserManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="sticky top-0 z-30 bg-white border-b py-3">
-        <div className="flex justify-between items-center gap-3">
-          <h2 className="text-2xl font-bold text-gray-900"></h2>
+    <div className="space-y-0">
+      <div className="sticky top-0 z-40 bg-white border-b py-2 min-h-[64px] -mt-6 -mx-6 px-6 mb-3">
+        <div className="flex h-full justify-end items-center gap-2">
           <div className="flex items-center gap-2">
             <div className="relative w-72">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
@@ -233,7 +232,7 @@ export function UserManagement() {
         </div>
       </div>
 
-      <Card>
+      <Card className="-mx-6 mt-2 mb-3 rounded-none border-x-0">
         <CardHeader><CardTitle>All Users ({filteredUsers.length})</CardTitle></CardHeader>
         <CardContent>
           <Table>
