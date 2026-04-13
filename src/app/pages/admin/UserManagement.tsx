@@ -128,7 +128,7 @@ export function UserManagement() {
     <div className="space-y-6">
       <div className="sticky top-0 z-30 bg-white border-b py-3">
         <div className="flex justify-between items-center gap-3">
-          <h2 className="text-2xl font-bold text-gray-900">User Account Management</h2>
+          <h2 className="text-2xl font-bold text-gray-900"></h2>
           <div className="flex items-center gap-2">
             <div className="relative w-72">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
