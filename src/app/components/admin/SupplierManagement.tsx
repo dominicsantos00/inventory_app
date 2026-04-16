@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useData } from '../../context/DataContext';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -7,73 +6,92 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { RCCItem } from '../../types';
 import { toast } from 'sonner';
 
-export function RCCManagement() {
-  const { rccItems, addRCCItem, updateRCCItem, deleteRCCItem } = useData();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<RCCItem | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState({
-    code: '',
-    officeName: '',
-    divisionName: '',
+export type SupplierItem = {
+  id: string;
+  name: string;
+  contact: string;
+};
+
+export function SupplierManagement() {
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>(() => {
+    const saved = localStorage.getItem('inventory_suppliers');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: '1', name: 'Acme General Merchandise', contact: '0912-345-6789' },
+      { id: '2', name: 'Highlands Office Solutions', contact: '0998-765-4321' }
+    ];
   });
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<SupplierItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    contact: '',
+  });
+
+  useEffect(() => {
+    localStorage.setItem('inventory_suppliers', JSON.stringify(suppliers));
+  }, [suppliers]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingItem) {
-      updateRCCItem(editingItem.id, formData);
-      toast.success('RCC item updated successfully');
+      setSuppliers(suppliers.map(s => 
+        s.id === editingItem.id ? { ...s, ...formData } : s
+      ));
+      toast.success('Supplier updated successfully');
     } else {
-      addRCCItem(formData);
-      toast.success('RCC item created successfully');
+      const newSupplier = {
+        id: Date.now().toString(),
+        ...formData
+      };
+      setSuppliers([...suppliers, newSupplier]);
+      toast.success('Supplier added successfully');
     }
     
     setIsDialogOpen(false);
     resetForm();
   };
 
-  const handleEdit = (item: RCCItem) => {
+  const handleEdit = (item: SupplierItem) => {
     setEditingItem(item);
     setFormData({
-      code: item.code,
-      officeName: item.officeName,
-      divisionName: item.divisionName,
+      name: item.name,
+      contact: item.contact,
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this RCC item?')) {
-      deleteRCCItem(id);
-      toast.success('RCC item deleted successfully');
+    if (confirm('Are you sure you want to delete this supplier?')) {
+      setSuppliers(suppliers.filter(s => s.id !== id));
+      toast.success('Supplier deleted successfully');
     }
   };
 
   const resetForm = () => {
     setEditingItem(null);
     setFormData({
-      code: '',
-      officeName: '',
-      divisionName: '',
+      name: '',
+      contact: '',
     });
   };
 
-  const filteredItems = rccItems.filter(
-    (item) =>
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.officeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.divisionName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSuppliers = suppliers.filter((s) =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.contact.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Responsibility Center Code (RCC) Management</CardTitle>
+          <CardTitle>Supplier Management</CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -81,50 +99,39 @@ export function RCCManagement() {
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700">
                 <Plus className="mr-2 h-4 w-4" />
-                Add RCC Item
+                Add Supplier
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>{editingItem ? 'Edit RCC Item' : 'Add New RCC Item'}</DialogTitle>
+                <DialogTitle>{editingItem ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">RCC Code</Label>
+                  <Label htmlFor="name">Supplier Name</Label>
                   <Input
-                    id="code"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    placeholder="e.g., 00014"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Acme General Merchandise"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="officeName">Office Name</Label>
+                  <Label htmlFor="contact">Contact Number</Label>
                   <Input
-                    id="officeName"
-                    value={formData.officeName}
-                    onChange={(e) => setFormData({ ...formData, officeName: e.target.value })}
-                    placeholder="e.g., Regional Office"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="divisionName">Abbreviation</Label>
-                  <Input
-                    id="divisionName"
-                    value={formData.divisionName}
-                    onChange={(e) => setFormData({ ...formData, divisionName: e.target.value })}
-                    placeholder="e.g., PMD"
+                    id="contact"
+                    value={formData.contact}
+                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                    placeholder="e.g., 0912-345-6789"
                     required
                   />
                 </div>
 
                 <div className="flex gap-2 pt-4">
                   <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
-                    {editingItem ? 'Update Item' : 'Create Item'}
+                    {editingItem ? 'Update Supplier' : 'Create Supplier'}
                   </Button>
                   <Button
                     type="button"
@@ -147,7 +154,7 @@ export function RCCManagement() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search by code, office, or division..."
+              placeholder="Search by supplier name or contact..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -158,31 +165,29 @@ export function RCCManagement() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>RCC Code</TableHead>
-              <TableHead>Office Name</TableHead>
-              <TableHead>Abbreviation</TableHead>
+              <TableHead>Supplier Name</TableHead>
+              <TableHead>Contact Number</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.code}</TableCell>
-                <TableCell>{item.officeName}</TableCell>
-                <TableCell>{item.divisionName}</TableCell>
+            {filteredSuppliers.map((supplier) => (
+              <TableRow key={supplier.id}>
+                <TableCell className="font-medium">{supplier.name}</TableCell>
+                <TableCell>{supplier.contact}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleEdit(item)}
+                      onClick={() => handleEdit(supplier)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => handleDelete(supplier.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -194,9 +199,9 @@ export function RCCManagement() {
           </TableBody>
         </Table>
 
-        {filteredItems.length === 0 && (
+        {filteredSuppliers.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            No RCC items found
+            No suppliers found
           </div>
         )}
       </CardContent>

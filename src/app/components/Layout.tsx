@@ -53,7 +53,6 @@ export function Layout(): JSX.Element {
 
   const pageTitle =
     (location.pathname === '/dashboard' && 'Dashboard') ||
-    (location.pathname.startsWith('/admin/master-data') && 'Master Data Management') ||
     (location.pathname.startsWith('/inventory/delivery') && 'Delivery Management') ||
     (location.pathname.startsWith('/inventory/supplies') && 'Office Supplies') ||
     (location.pathname.startsWith('/inventory/equipment') && 'Equipment Management') ||
@@ -176,11 +175,11 @@ export function Layout(): JSX.Element {
                       ? 'bg-green-700 text-white'
                       : 'text-green-100 hover:bg-green-700/50'
                   } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                  title={isCollapsed ? 'Delivery (Stock In)' : undefined}
+                  title={isCollapsed ? 'Delivery Management' : undefined}
                 >
                   <Truck size={isCollapsed ? 28 : 20} className="shrink-0" />
                   {!isCollapsed && (
-                    <span className="truncate text-base font-medium">Delivery (Stock In)</span>
+                    <span className="truncate text-base font-medium">Delivery Management</span>
                   )}
                 </Link>
               </>
@@ -199,7 +198,7 @@ export function Layout(): JSX.Element {
                 >
                   <Package size={isCollapsed ? 28 : 20} className="shrink-0" />
                   {!isCollapsed && (
-                    <span className="truncate text-base font-medium">Office</span>
+                    <span className="truncate text-base font-medium">Office Supplies</span>
                   )}
                 </Link>
 

@@ -12,6 +12,37 @@ import {
   User,
 } from '../types';
 
+// --- NEW TYPES FOR SUPPLIER AND DELIVERY OVERHAUL ---
+export interface SupplierItem {
+  id: string;
+  name: string;
+  contact: string;
+}
+
+export interface ForDeliveryRecord {
+  id: string;
+  type: string;
+  poNumber: string;
+  poDate: string;
+  supplier: string;
+  items: any[];
+}
+
+export interface DeliveredRecord {
+  id: string;
+  dateDelivered: string;
+  type: string;
+  itemDescription: string;
+  poNumber: string;
+  receiptNumber: string;
+  supplier: string;
+  qty: number;
+  unit: string;
+  price: number;
+  amount: number;
+}
+// ----------------------------------------------------
+
 interface DataContextType {
   // SSN Data
   ssnItems: SSNItem[];
@@ -25,17 +56,35 @@ interface DataContextType {
   updateRCCItem: (id: string, item: Partial<RCCItem>) => Promise<void>;
   deleteRCCItem: (id: string) => Promise<void>;
 
+  // Supplier Data (NEW)
+  suppliers: SupplierItem[];
+  addSupplier: (item: Omit<SupplierItem, 'id'>) => Promise<void>;
+  updateSupplier: (id: string, item: Partial<SupplierItem>) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
+
   // Purchase Order Data
   poRecords: PORecord[];
   addPORecord: (record: Omit<PORecord, 'id'>) => Promise<void>;
   updatePORecord: (id: string, record: Partial<PORecord>) => Promise<void>;
   deletePORecord: (id: string) => Promise<void>;
 
-  // Delivery Data
+  // Legacy Delivery Data
   deliveries: DeliveryItem[];
   addDelivery: (item: Omit<DeliveryItem, 'id' | 'totalPrice'>) => Promise<void>;
   updateDelivery: (id: string, item: Partial<DeliveryItem>) => Promise<void>;
   deleteDelivery: (id: string) => Promise<void>;
+
+  // For Delivery Data (NEW)
+  forDeliveryRecords: ForDeliveryRecord[];
+  addForDeliveryRecord: (record: Omit<ForDeliveryRecord, 'id'>) => Promise<void>;
+  updateForDeliveryRecord: (id: string, record: Partial<ForDeliveryRecord>) => Promise<void>;
+  deleteForDeliveryRecord: (id: string) => Promise<void>;
+
+  // Delivered Data (NEW)
+  deliveredRecords: DeliveredRecord[];
+  addDeliveredRecord: (record: Omit<DeliveredRecord, 'id'>) => Promise<void>;
+  updateDeliveredRecord: (id: string, record: Partial<DeliveredRecord>) => Promise<void>;
+  deleteDeliveredRecord: (id: string) => Promise<void>;
 
   // IAR Data
   iarRecords: IARRecord[];
@@ -83,8 +132,11 @@ const API_URL = '/api';
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [ssnItems, setSSNItems] = useState<SSNItem[]>([]);
   const [rccItems, setRCCItems] = useState<RCCItem[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]); // NEW
   const [poRecords, setPORecords] = useState<PORecord[]>([]);
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
+  const [forDeliveryRecords, setForDeliveryRecords] = useState<ForDeliveryRecord[]>([]); // NEW
+  const [deliveredRecords, setDeliveredRecords] = useState<DeliveredRecord[]>([]); // NEW
   const [iarRecords, setIARRecords] = useState<IARRecord[]>([]);
   const [risRecords, setRISRecords] = useState<RISRecord[]>([]);
   const [rsmiRecords, setRSMIRecords] = useState<RSMIRecord[]>([]);
@@ -98,8 +150,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const endpoints = [
           { url: 'ssnItems', setter: setSSNItems },
           { url: 'rccItems', setter: setRCCItems },
+          { url: 'suppliers', setter: setSuppliers }, // NEW
           { url: 'poRecords', setter: setPORecords },
           { url: 'deliveries', setter: setDeliveries },
+          { url: 'forDeliveryRecords', setter: setForDeliveryRecords }, // NEW
+          { url: 'deliveredRecords', setter: setDeliveredRecords }, // NEW
           { url: 'iarRecords', setter: setIARRecords },
           { url: 'risRecords', setter: setRISRecords },
           { url: 'rsmiRecords', setter: setRSMIRecords },
@@ -110,7 +165,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
         for (const endpoint of endpoints) {
           try {
-            // === CACHE BUSTER 1: Add ?t=timestamp to bypass Vercel Cache ===
             const timestamp = new Date().getTime();
             const response = await fetch(`${API_URL}/${endpoint.url}?t=${timestamp}`, {
               headers: {
@@ -138,7 +192,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const apiRequest = async (endpoint: string, method: string, data?: any) => {
     try {
-      // === CACHE BUSTER 2: Append timestamp if it is a GET request ===
       let url = `${API_URL}/${endpoint}`;
       if (method === 'GET') {
         const separator = url.includes('?') ? '&' : '?';
@@ -205,6 +258,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ------------------------------------
+  // Supplier Functions (NEW)
+  // ------------------------------------
+  const addSupplier = async (item: Omit<SupplierItem, 'id'>) => {
+    const res = await apiRequest('suppliers', 'POST', item);
+    setSuppliers((prev) => [...prev, { ...item, id: res.id }]);
+  };
+
+  const updateSupplier = async (id: string, item: Partial<SupplierItem>) => {
+    await apiRequest(`suppliers/${id}`, 'PUT', item);
+    setSuppliers((prev) => prev.map((i) => (i.id === id ? { ...i, ...item } : i)));
+  };
+
+  const deleteSupplier = async (id: string) => {
+    await apiRequest(`suppliers/${id}`, 'DELETE');
+    setSuppliers((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  // ------------------------------------
   // Purchase Order Functions
   // ------------------------------------
   const addPORecord = async (record: Omit<PORecord, 'id'>) => {
@@ -223,7 +294,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ------------------------------------
-  // Delivery Functions
+  // Legacy Delivery Functions
   // ------------------------------------
   const addDelivery = async (item: Omit<DeliveryItem, 'id' | 'totalPrice'>) => {
     const totalPrice = item.quantity * item.unitPrice;
@@ -253,6 +324,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setDeliveries((prev) => prev.filter((i) => i.id !== id));
     const rpciResponse = await apiRequest('rpciRecords', 'GET');
     setRPCIRecords(rpciResponse);
+  };
+
+  // ------------------------------------
+  // For Delivery Functions (NEW)
+  // ------------------------------------
+  const addForDeliveryRecord = async (record: Omit<ForDeliveryRecord, 'id'>) => {
+    const res = await apiRequest('forDeliveryRecords', 'POST', record);
+    setForDeliveryRecords((prev) => [...prev, { ...record, id: res.id }]);
+  };
+
+  const updateForDeliveryRecord = async (id: string, record: Partial<ForDeliveryRecord>) => {
+    await apiRequest(`forDeliveryRecords/${id}`, 'PUT', record);
+    setForDeliveryRecords((prev) => prev.map((r) => (r.id === id ? { ...r, ...record } : r)));
+  };
+
+  const deleteForDeliveryRecord = async (id: string) => {
+    await apiRequest(`forDeliveryRecords/${id}`, 'DELETE');
+    setForDeliveryRecords((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // ------------------------------------
+  // Delivered Functions (NEW)
+  // ------------------------------------
+  const addDeliveredRecord = async (record: Omit<DeliveredRecord, 'id'>) => {
+    const res = await apiRequest('deliveredRecords', 'POST', record);
+    setDeliveredRecords((prev) => [...prev, { ...record, id: res.id }]);
+  };
+
+  const updateDeliveredRecord = async (id: string, record: Partial<DeliveredRecord>) => {
+    await apiRequest(`deliveredRecords/${id}`, 'PUT', record);
+    setDeliveredRecords((prev) => prev.map((r) => (r.id === id ? { ...r, ...record } : r)));
+  };
+
+  const deleteDeliveredRecord = async (id: string) => {
+    await apiRequest(`deliveredRecords/${id}`, 'DELETE');
+    setDeliveredRecords((prev) => prev.filter((r) => r.id !== id));
   };
 
   // ------------------------------------
@@ -415,8 +522,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const value: DataContextType = {
     ssnItems, addSSNItem, updateSSNItem, deleteSSNItem,
     rccItems, addRCCItem, updateRCCItem, deleteRCCItem,
+    suppliers, addSupplier, updateSupplier, deleteSupplier,
     poRecords, addPORecord, updatePORecord, deletePORecord,
     deliveries, addDelivery, updateDelivery, deleteDelivery,
+    forDeliveryRecords, addForDeliveryRecord, updateForDeliveryRecord, deleteForDeliveryRecord,
+    deliveredRecords, addDeliveredRecord, updateDeliveredRecord, deleteDeliveredRecord,
     iarRecords, addIARRecord, updateIARRecord, deleteIARRecord,
     risRecords, addRISRecord, updateRISRecord, deleteRISRecord,
     rsmiRecords, addRSMIRecord, updateRSMIRecord, deleteRSMIRecord,
