@@ -9,7 +9,7 @@ export function MasterData() {
     <div className="space-y-0 relative h-full flex flex-col">
       {/* Sticky Top Header Section */}
       <div className="sticky top-0 z-40 bg-white border-b pb-4 pt-2 -mx-6 px-6 mb-2">
-        <div>
+        <div className="sticky top-0">
           <h2 className="text-2xl font-bold text-gray-900">Master Data Management</h2>
           <p className="text-gray-600 mt-1">Manage SSN, RCC, and Supplier data</p>
         </div>
