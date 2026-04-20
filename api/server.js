@@ -543,11 +543,11 @@ app.put('/api/users/:id', async (req, res) => {
         if (password && password.trim() !== '') {
             // ADDED: If the admin typed a new password, hash it and update the password column
             const hashedPassword = await bcrypt.hash(password, 12);
-            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ?, password = ? WHERE id = ?`;
+            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division = ?, email = ?, password = ? WHERE id = ?`;
             await pool.query(query, [username, fullName, role, division || null, email, hashedPassword, id]);
         } else {
             // ADDED: If the password field was left blank, update everything else but leave the old password alone
-            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ? WHERE id = ?`;
+            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division = ?, email = ? WHERE id = ?`;
             await pool.query(query, [username, fullName, role, division || null, email, id]);
         }
         res.json({ message: 'User updated successfully!' });
