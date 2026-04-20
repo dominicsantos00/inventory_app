@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Input } from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
-import { Search, Settings } from 'lucide-react';
+import { Search, Settings, Monitor, PhilippinePeso, Layers } from 'lucide-react';
 
 export function Equipment() {
   const { deliveries } = useData();
@@ -25,95 +25,106 @@ export function Equipment() {
   const totalUnits = equipmentDeliveries.reduce((sum, eq) => sum + eq.quantity, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900"></h2>
-        <p className="text-gray-600 mt-1">Manage and track non-consumable equipment inventory</p>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Equipment Inventory</h2>
+        <p className="text-slate-500 text-sm mt-1">Manage and track non-consumable equipment and assets.</p>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Modern Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Equipment Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{totalEquipment}</div>
-            <p className="text-xs text-gray-500 mt-1">All equipment records</p>
+        <Card className="shadow-sm border-slate-200">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Total Equipment Items</p>
+                <div className="text-3xl font-bold text-slate-900 mt-2">{totalEquipment}</div>
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Monitor size={20} /></div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Units</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{totalUnits}</div>
-            <p className="text-xs text-gray-500 mt-1">Equipment units in inventory</p>
+        <Card className="shadow-sm border-slate-200">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Total Units</p>
+                <div className="text-3xl font-bold text-slate-900 mt-2">{totalUnits}</div>
+              </div>
+              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><Layers size={20} /></div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Value</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">₱{totalValue.toLocaleString()}</div>
-            <p className="text-xs text-gray-500 mt-1">Total investment value</p>
+        <Card className="shadow-sm border-slate-200">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Total Investment Value</p>
+                <div className="text-3xl font-bold text-slate-900 mt-2">₱{totalValue.toLocaleString()}</div>
+              </div>
+              <div className="p-3 bg-green-50 text-green-600 rounded-xl"><PhilippinePeso size={20} /></div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Equipment List */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Equipment Inventory ({equipmentDeliveries.length})</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+      {/* Equipment List Table */}
+      <Card className="shadow-sm border-slate-200 overflow-hidden">
+        <CardHeader className="border-b border-slate-100 pb-4 bg-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-lg font-semibold text-slate-800">Inventory Records</CardTitle>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
               <Input
-                placeholder="Search equipment..."
+                placeholder="Search by name, supplier, or PO..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-9 border-slate-200"
               />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead>Date Acquired</TableHead>
-                <TableHead>Equipment Name</TableHead>
-                <TableHead>PO Number</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Unit Price</TableHead>
-                <TableHead>Total Value</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date Acquired</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Equipment Details</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Supplier & PO</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Quantity</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Unit Price</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Value</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEquipment.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                    <Settings className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p>{searchQuery ? 'No equipment found matching your search' : 'No equipment recorded yet'}</p>
+                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                    <Settings className="h-10 w-10 mx-auto mb-3 text-slate-300" />
+                    <p>{searchQuery ? 'No equipment found matching your search.' : 'No equipment recorded yet.'}</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredEquipment.map((equipment) => (
-                  <TableRow key={equipment.id}>
-                    <TableCell>{new Date(equipment.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium">{equipment.item}</TableCell>
-                    <TableCell>{equipment.poNumber}</TableCell>
-                    <TableCell>{equipment.supplier}</TableCell>
-                    <TableCell>{equipment.quantity} {equipment.unit}</TableCell>
-                    <TableCell>₱{equipment.unitPrice.toLocaleString()}</TableCell>
-                    <TableCell className="font-semibold">₱{equipment.totalPrice.toLocaleString()}</TableCell>
+                  <TableRow key={equipment.id} className="hover:bg-slate-50 transition-colors">
+                    <TableCell className="text-slate-600">{new Date(equipment.date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium text-slate-900">{equipment.item}</TableCell>
                     <TableCell>
-                      <Badge className="bg-green-100 text-green-700">Active</Badge>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-700">{equipment.supplier}</span>
+                        <span className="text-xs text-slate-500">{equipment.poNumber}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-slate-600">{equipment.quantity} <span className="text-xs text-slate-400">{equipment.unit}</span></TableCell>
+                    <TableCell className="text-slate-600">₱{equipment.unitPrice.toLocaleString()}</TableCell>
+                    <TableCell className="font-semibold text-slate-900">₱{equipment.totalPrice.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Active</Badge>
                     </TableCell>
                   </TableRow>
                 ))
@@ -123,21 +134,24 @@ export function Equipment() {
         </CardContent>
       </Card>
 
-      {/* Equipment Categories (Sample Data) */}
+      {/* Equipment Categories (Mock visual improvement) */}
       {equipmentDeliveries.length > 0 && (
-        <Card>
+        <Card className="shadow-sm border-slate-200">
           <CardHeader>
-            <CardTitle>Equipment by Category</CardTitle>
+            <CardTitle className="text-lg font-semibold text-slate-800">Categories Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {['Office Equipment', 'IT Equipment', 'Furniture', 'Vehicles', 'Machinery', 'Other'].map((category) => {
-                const count = Math.floor(Math.random() * 10) + 1;
+                // Mock count generation based on name length for stable visual mock data
+                const count = category.length % 5 + 2; 
                 return (
-                  <div key={category} className="p-4 border rounded-lg">
-                    <h3 className="font-semibold text-gray-900">{category}</h3>
-                    <p className="text-2xl font-bold text-green-600 mt-2">{count}</p>
-                    <p className="text-xs text-gray-500">items</p>
+                  <div key={category} className="p-4 bg-slate-50 border border-slate-100 rounded-xl hover:border-slate-300 transition-colors">
+                    <h3 className="font-medium text-slate-700 text-sm line-clamp-1" title={category}>{category}</h3>
+                    <div className="flex items-end gap-2 mt-2">
+                       <p className="text-2xl font-bold text-slate-900">{count}</p>
+                       <p className="text-xs text-slate-500 mb-1">items</p>
+                    </div>
                   </div>
                 );
               })}

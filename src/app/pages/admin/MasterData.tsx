@@ -2,61 +2,56 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { SSNManagement } from '../../components/admin/SSNManagement';
 import { RCCManagement } from '../../components/admin/RCCManagement';
-import { SupplierManagement } from '../../components/admin/SupplierManagement'; // Import the new component
+import { SupplierManagement } from '../../components/admin/SupplierManagement';
 
 export function MasterData() {
   return (
-    <div className="space-y-0 relative h-full flex flex-col">
-      {/* Sticky Top Header Section */}
-      <div className="sticky top-0 z-40 bg-white border-b pb-4 pt-2 -mx-6 px-6 mb-2">
-        <div className="sticky top-0">
-          <h2 className="text-2xl font-bold text-gray-900">Master Data Management</h2>
-          <p className="text-gray-600 mt-1">Manage SSN, RCC, and Supplier data</p>
-        </div>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col h-full">
+      {/* Clean Page Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Master Data Management</h2>
+        <p className="text-slate-500 text-sm mt-1">Configure and manage core system entities: SSN, RCC, and Suppliers.</p>
       </div>
 
       <Tabs defaultValue="ssn" className="w-full flex-1 flex flex-col">
-        {/* Sticky Tabs Navigation Wrapper */}
-        <div className="sticky top-[80px] z-30 bg-white py-2 -mx-6 px-6 border-b">
-          <TabsList className="grid w-full max-w-3xl grid-cols-3 bg-gray-100 p-1 rounded-lg">
-            
-            {/* The active tab is made distinctly darker using data-[state=active] */}
-            <TabsTrigger 
-              value="ssn" 
-              className="data-[state=active]:bg-gray-800 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
-            >
-              SSN (Supply Stock Number)
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="rcc"
-              className="data-[state=active]:bg-gray-800 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
-            >
-              RCC (Responsibility Center Code)
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="supplier"
-              className="data-[state=active]:bg-gray-800 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
-            >
-              Suppliers
-            </TabsTrigger>
+        {/* Modern Segmented Navigation */}
+        <TabsList className="grid w-full max-w-3xl grid-cols-3 bg-slate-100 p-1 rounded-xl h-12 border border-slate-200 shadow-sm">
+          <TabsTrigger 
+            value="ssn" 
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm"
+          >
+            Supply Stock Numbers (SSN)
+          </TabsTrigger>
+          
+          <TabsTrigger 
+            value="rcc"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm"
+          >
+            Responsibility Centers (RCC)
+          </TabsTrigger>
+          
+          <TabsTrigger 
+            value="supplier"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm"
+          >
+            Suppliers Directory
+          </TabsTrigger>
+        </TabsList>
 
-          </TabsList>
+        {/* Tab Contents - Spaced properly below the tabs */}
+        <div className="mt-6">
+          <TabsContent value="ssn" className="m-0 focus-visible:outline-none">
+            <SSNManagement />
+          </TabsContent>
+
+          <TabsContent value="rcc" className="m-0 focus-visible:outline-none">
+            <RCCManagement />
+          </TabsContent>
+
+          <TabsContent value="supplier" className="m-0 focus-visible:outline-none">
+            <SupplierManagement />
+          </TabsContent>
         </div>
-
-        {/* Tab Contents */}
-        <TabsContent value="ssn" className="mt-6">
-          <SSNManagement />
-        </TabsContent>
-
-        <TabsContent value="rcc" className="mt-6">
-          <RCCManagement />
-        </TabsContent>
-
-        <TabsContent value="supplier" className="mt-6">
-          <SupplierManagement />
-        </TabsContent>
       </Tabs>
     </div>
   );
