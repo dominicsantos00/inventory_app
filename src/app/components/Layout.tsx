@@ -14,14 +14,46 @@ import {
   Truck,
   ChevronLeft,
   ChevronRight,
-  
-  
+  Bell,
+  Search
 } from 'lucide-react';
 
 type OutletContextType = {
   isCollapsed: boolean;
 };
 
+// --- Helper Components for a cleaner Sidebar ---
+function NavItem({ to, icon: Icon, label, isActive, isCollapsed }: { to: string, icon: any, label: string, isActive: boolean, isCollapsed: boolean }) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+        isActive 
+          ? 'bg-green-50 text-green-700 font-medium' 
+          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+      } ${isCollapsed ? 'justify-center' : ''}`}
+      title={isCollapsed ? label : undefined}
+    >
+      <Icon size={20} className={isActive ? 'text-green-600' : 'text-slate-400'} />
+      {!isCollapsed && <span className="text-sm">{label}</span>}
+    </Link>
+  );
+}
+
+function NavSection({ label, isCollapsed, children }: { label: string, isCollapsed: boolean, children: React.ReactNode }) {
+  return (
+    <div className="mt-6 mb-2">
+      {!isCollapsed && (
+        <p className="px-3 text-xs font-semibold text-slate-400 tracking-wider uppercase mb-2">
+          {label}
+        </p>
+      )}
+      <div className="space-y-1">{children}</div>
+    </div>
+  );
+}
+
+// --- Main Layout Component ---
 export function Layout(): JSX.Element {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -34,270 +66,145 @@ export function Layout(): JSX.Element {
     }
   }, [isAuthenticated, navigate]);
 
-  if (!isAuthenticated) {
-    return <></>;
-  }
+  if (!isAuthenticated) return <></>;
 
   const handleLogout = (): void => {
     logout();
     navigate('/login');
   };
 
-  const toggleSidebar = (): void => {
-    setIsCollapsed((prev) => !prev);
-  };
-
   const isActive = (path: string): boolean => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  const pageTitle =
-    (location.pathname === '/dashboard' && 'Dashboard') ||
-    (location.pathname.startsWith('/inventory/delivery') && 'Delivery Management') ||
-    (location.pathname.startsWith('/inventory/supplies') && 'Office Supplies') ||
-    (location.pathname.startsWith('/inventory/equipment') && 'Equipment Management') ||
-    (location.pathname.startsWith('/procurement') && 'Procurement Data') ||
-    '';
-
+  // Role-based access logic
   const canAccessAdmin = user?.role === 'level1';
   const canAccessSupplies = user?.role === 'level1' || user?.role === 'level2a';
   const canAccessEquipment = user?.role === 'level1' || user?.role === 'level2b';
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
-      {/* Sidebar */}
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans">
+      
+      {/* Modern Sidebar */}
       <aside
-        className={`h-screen bg-green-800 text-white transition-all duration-300 ease-in-out flex flex-col shrink-0 ${
+        className={`h-screen bg-white border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col shrink-0 relative z-20 ${
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
-        {/* Toggle Button */}
-        <div className="flex items-center justify-between p-4 border-b border-green-700 h-[73px] shrink-0">
+        {/* Brand Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 h-[73px] shrink-0">
           {!isCollapsed ? (
-            <>
-              <div className="overflow-hidden">
-                <h1 className="text-xl font-bold whitespace-nowrap">DENR-CAR</h1>
-                <p className="text-sm text-green-200 whitespace-nowrap">
-                  Supply Inventory System
-                </p>
+            <div className="overflow-hidden flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-green-700 flex items-center justify-center text-white font-bold">
+                D
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="text-green-100 hover:text-white hover:bg-green-700 shrink-0"
-              >
-                <ChevronLeft size={24} />
-              </Button>
-            </>
+              <div>
+                <h1 className="text-sm font-bold text-slate-900 tracking-tight">DENR-CAR</h1>
+                <p className="text-[10px] text-slate-500 uppercase font-semibold tracking-wider">Inventory System</p>
+              </div>
+            </div>
           ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="text-green-100 hover:text-white hover:bg-green-700 mx-auto"
-            >
-              <ChevronRight size={24} />
-            </Button>
+            <div className="h-8 w-8 rounded-lg bg-green-700 flex items-center justify-center text-white font-bold mx-auto">
+              D
+            </div>
           )}
         </div>
 
-        {/* Navigation */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
-          <nav className="space-y-2">
-            <Link
-              to="/dashboard"
-              className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                isActive('/dashboard')
-                  ? 'bg-green-700 text-white'
-                  : 'text-green-100 hover:bg-green-700/50'
-              } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-              title={isCollapsed ? 'Dashboard' : undefined}
-            >
-              <LayoutDashboard size={isCollapsed ? 28 : 20} className="shrink-0" />
-              {!isCollapsed && <span className="truncate text-base font-medium">Dashboard</span>}
-            </Link>
+        {/* Collapse Toggle Button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-6 bg-white border border-slate-200 text-slate-400 hover:text-slate-600 rounded-full p-1 shadow-sm transition-colors z-30"
+        >
+          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+
+        {/* Navigation Area */}
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+          <nav className="space-y-1">
+            <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" isActive={isActive('/dashboard')} isCollapsed={isCollapsed} />
 
             {canAccessAdmin && (
-              <>
-                {!isCollapsed ? (
-                  <div className="pt-4 pb-2">
-                    <p className="text-xs text-green-300 px-3">ADMINISTRATION</p>
-                  </div>
-                ) : (
-                  <div className="pt-4 border-t border-green-700/50 mt-2" />
-                )}
-
-                <Link
-                  to="/admin/users"
-                  className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                    isActive('/admin/users')
-                      ? 'bg-green-700 text-white'
-                      : 'text-green-100 hover:bg-green-700/50'
-                  } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                  title={isCollapsed ? 'User Management' : undefined}
-                >
-                  <Users size={isCollapsed ? 28 : 20} className="shrink-0" />
-                  {!isCollapsed && (
-                    <span className="truncate text-base font-medium">User Management</span>
-                  )}
-                </Link>
-
-                <Link
-                  to="/admin/master-data"
-                  className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                    isActive('/admin/master-data')
-                      ? 'bg-green-700 text-white'
-                      : 'text-green-100 hover:bg-green-700/50'
-                  } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                  title={isCollapsed ? 'Master Data' : undefined}
-                >
-                  <Database size={isCollapsed ? 28 : 20} className="shrink-0" />
-                  {!isCollapsed && <span className="truncate text-base font-medium">Master Data</span>}
-                </Link>
-              </>
+              <NavSection label="Administration" isCollapsed={isCollapsed}>
+                <NavItem to="/admin/users" icon={Users} label="User Management" isActive={isActive('/admin/users')} isCollapsed={isCollapsed} />
+                <NavItem to="/admin/master-data" icon={Database} label="Master Data" isActive={isActive('/admin/master-data')} isCollapsed={isCollapsed} />
+              </NavSection>
             )}
 
             {(canAccessSupplies || canAccessEquipment) && (
-              <>
-                {!isCollapsed ? (
-                  <div className="pt-4 pb-2">
-                    <p className="text-xs text-green-300 px-3">INVENTORY</p>
-                  </div>
-                ) : (
-                  <div className="pt-4 border-t border-green-700/50 mt-2" />
-                )}
-
-                <Link
-                  to="/inventory/delivery"
-                  className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                    isActive('/inventory/delivery')
-                      ? 'bg-green-700 text-white'
-                      : 'text-green-100 hover:bg-green-700/50'
-                  } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                  title={isCollapsed ? 'Delivery Management' : undefined}
-                >
-                  <Truck size={isCollapsed ? 28 : 20} className="shrink-0" />
-                  {!isCollapsed && (
-                    <span className="truncate text-base font-medium">Delivery Management</span>
-                  )}
-                </Link>
-              </>
+              <NavSection label="Inventory" isCollapsed={isCollapsed}>
+                <NavItem to="/inventory/delivery" icon={Truck} label="Deliveries" isActive={isActive('/inventory/delivery')} isCollapsed={isCollapsed} />
+                {canAccessSupplies && <NavItem to="/inventory/supplies" icon={Package} label="Office Supplies" isActive={isActive('/inventory/supplies')} isCollapsed={isCollapsed} />}
+                {canAccessEquipment && <NavItem to="/inventory/equipment" icon={Settings} label="Equipment" isActive={isActive('/inventory/equipment')} isCollapsed={isCollapsed} />}
+              </NavSection>
             )}
-
-            {canAccessSupplies && (
-              <>
-                <Link
-                  to="/inventory/supplies"
-                  className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                    isActive('/inventory/supplies')
-                      ? 'bg-green-700 text-white'
-                      : 'text-green-100 hover:bg-green-700/50'
-                  } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                  title={isCollapsed ? 'Office' : undefined}
-                >
-                  <Package size={isCollapsed ? 28 : 20} className="shrink-0" />
-                  {!isCollapsed && (
-                    <span className="truncate text-base font-medium">Office Supplies</span>
-                  )}
-                </Link>
-
-              </>
-            )}
-
-            {canAccessEquipment && (
-              <Link
-                to="/inventory/equipment"
-                className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                  isActive('/inventory/equipment')
-                    ? 'bg-green-700 text-white'
-                    : 'text-green-100 hover:bg-green-700/50'
-                } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                title={isCollapsed ? 'Equipment' : undefined}
-              >
-                <Settings size={isCollapsed ? 28 : 20} className="shrink-0" />
-                {!isCollapsed && <span className="truncate text-base font-medium">Equipment</span>}
-              </Link>
-            )}
-
 
             {user?.role === 'end-user' && (
-              <>
-                {!isCollapsed ? (
-                  <div className="pt-4 pb-2">
-                    <p className="text-xs text-green-300 px-3">PROCUREMENT</p>
-                  </div>
-                ) : (
-                  <div className="pt-4 border-t border-green-700/50 mt-2" />
-                )}
-
-                <Link
-                  to="/procurement"
-                  className={`flex items-center gap-3 px-3 py-4 rounded-lg transition-all duration-300 ease-in-out ${
-                    isActive('/procurement')
-                      ? 'bg-green-700 text-white'
-                      : 'text-green-100 hover:bg-green-700/50'
-                  } ${isCollapsed ? 'justify-center min-h-14' : ''}`}
-                  title={isCollapsed ? 'My Procurement' : undefined}
-                >
-                  <ClipboardList size={isCollapsed ? 28 : 20} className="shrink-0" />
-                  {!isCollapsed && (
-                    <span className="truncate text-base font-medium">My Procurement</span>
-                  )}
-                </Link>
-              </>
+              <NavSection label="Procurement" isCollapsed={isCollapsed}>
+                <NavItem to="/procurement" icon={ClipboardList} label="My Procurement" isActive={isActive('/procurement')} isCollapsed={isCollapsed} />
+              </NavSection>
             )}
           </nav>
         </div>
 
-        {/* User Area */}
-        {!isCollapsed ? (
-          <div className="p-4 border-t border-green-700 shrink-0 overflow-hidden">
-            <div className="mb-3 px-3 min-w-0">
-              <p className="text-base font-semibold truncate">{user?.fullName}</p>
-              <p className="text-sm text-green-300 truncate">{user?.email}</p>
-              <p className="text-sm text-green-300 mt-1 truncate">
-                {user?.role === 'level1' && 'System Administrator'}
-                {user?.role === 'level2a' && 'Office Supplies Admin'}
-                {user?.role === 'level2b' && 'Equipment Admin'}
-                {user?.role === 'end-user' && `End User - ${user?.division}`}
-              </p>
+        {/* User Profile & Logout Footer */}
+        <div className="p-4 border-t border-slate-100 shrink-0">
+          {!isCollapsed ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 px-2">
+                <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium">
+                  {user?.fullName?.charAt(0) || 'U'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{user?.fullName}</p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {user?.role === 'level1' && 'System Admin'}
+                    {user?.role === 'level2a' && 'Supplies Admin'}
+                    {user?.role === 'level2b' && 'Equipment Admin'}
+                    {user?.role === 'end-user' && `End User`}
+                  </p>
+                </div>
+              </div>
+              <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+                <LogOut size={18} className="mr-2" /> Logout
+              </Button>
             </div>
-
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="w-full bg-green-700 border-green-600 text-white hover:bg-green-600 text-base"
-            >
-              <LogOut size={18} className="mr-2 shrink-0" />
-              Logout
+          ) : (
+            <Button onClick={handleLogout} variant="ghost" size="icon" className="w-full text-slate-400 hover:text-red-600 hover:bg-red-50" title="Logout">
+              <LogOut size={20} />
             </Button>
-          </div>
-        ) : (
-          <div className="p-4 border-t border-green-700 flex justify-center shrink-0">
-            <Button
-              onClick={handleLogout}
-              variant="ghost"
-              size="icon"
-              className="text-green-100 hover:text-white hover:bg-green-700"
-              title="Logout"
-            >
-              <LogOut size={24} />
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 min-w-0 max-w-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
-        {pageTitle && (
-          <header className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 min-w-0">
-            <h2 className="text-3xl font-bold text-gray-800 truncate">{pageTitle}</h2>
-          </header>
-        )}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        {/* Modern Header (Sticky Top Bar) */}
+        <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 h-[73px] px-8 flex items-center justify-between shrink-0 sticky top-0 z-10">
+          {/* Global Search */}
+          <div className="flex items-center text-slate-500 bg-slate-100 px-3 py-2 rounded-lg w-96 transition-all focus-within:ring-2 focus-within:ring-green-500/20 focus-within:bg-white focus-within:border-green-200 border border-transparent">
+             <Search size={18} className="mr-2 text-slate-400" />
+             <input 
+                type="text" 
+                placeholder="Search inventory, POs, or reports..." 
+                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400" 
+             />
+          </div>
+          
+          {/* Action Icons */}
+          <div className="flex items-center gap-4">
+             <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100">
+               <Bell size={20} />
+               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border-2 border-white"></span>
+             </button>
+          </div>
+        </header>
 
-        <main className="flex-1 min-w-0 max-w-full overflow-y-auto overflow-x-hidden p-6 transition-all duration-300 ease-in-out">
-          <Outlet context={{ isCollapsed } satisfies OutletContextType} />
+        {/* Dynamic Page Content */}
+        <main className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-7xl mx-auto">
+            <Outlet context={{ isCollapsed } satisfies OutletContextType} />
+          </div>
         </main>
       </div>
     </div>
