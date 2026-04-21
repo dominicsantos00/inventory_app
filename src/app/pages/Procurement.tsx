@@ -41,7 +41,7 @@ export function Procurement() {
   // --- DATA FILTERING ---
   // 1. For Delivery (Pending Deliveries)
   const pendingDeliveries = deliveries.filter(
-    (d) => d.item.toLowerCase().includes(searchQuery.toLowerCase())
+    (d) => d.status !== 'received' && d.item.toLowerCase().includes(searchQuery.toLowerCase())
   ).reverse();
 
   // 2. Delivered (IAR Records for this division)

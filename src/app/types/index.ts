@@ -53,6 +53,7 @@ export interface DeliveryItem {
   unitPrice: number;
   totalPrice: number;
   remarks: string;
+  status: 'pending' | 'received';
 }
 
 export interface PORecord {
@@ -100,6 +101,8 @@ export interface RISRecord {
     unit: string;
     quantityRequested: number;
     quantityIssued: number;
+    unitPrice: number;
+    amount: number;
     remarks: string;
   }>;
 }
@@ -125,6 +128,7 @@ export interface StockCardRecord {
   description: string;
   unit: string;
   reorderPoint: number;
+  unitPrice: number;
   transactions: Array<{
     date: string;
     reference: string;
