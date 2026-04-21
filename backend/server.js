@@ -75,9 +75,9 @@ app.post('/api/login', async (req, res) => {
 });
 
 const pool = mysql.createPool({
-    host: process.env.MYSQLHOST || 'ballast.proxy.rlwy.net',
+    host: process.env.MYSQLHOST || 'roundhouse.proxy.rlwy.net',
     user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || 'VZbbuqKfMDwqoMtzFmygbDwBNSlVSfVw',
+    password: process.env.MYSQLPASSWORD || 'YzbBgMKxAGUbQrElLHCcWZGCtsqrQWEG',
     database: process.env.MYSQLDATABASE || 'railway',
     waitForConnections: true,
     connectionLimit: 10,
