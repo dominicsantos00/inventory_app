@@ -1,239 +1,295 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Badge } from '../components/ui/badge';
-import { Search, ClipboardList, Package } from 'lucide-react';
+import { Search, Package, Truck, CheckCircle, Boxes, FileText, TrendingUp } from 'lucide-react';
+
+// --- Reusable Read-Only Metric Card ---
+function MetricCard({ title, value, subtitle, icon: Icon, colorClass, bgClass }: any) {
+  return (
+    <Card className="relative overflow-hidden shadow-sm border border-slate-200/60 bg-white">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{title}</p>
+            <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value}</h3>
+          </div>
+          <div className={`p-3 rounded-xl ${bgClass} ${colorClass}`}>
+            <Icon size={22} strokeWidth={2.5} />
+          </div>
+        </div>
+        <p className="mt-3 text-sm font-medium text-slate-500">{subtitle}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function Procurement() {
   const { user } = useAuth();
-  const { deliveries, iarRecords, risRecords } = useData();
+  // Fetch all necessary datasets from context
+  const { deliveries, iarRecords, risRecords, stockCards } = useData();
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState("for-delivery");
 
-  // Filter data relevant to user's division
-  const userDivision = user?.division || '';
+  // User's division string
+  const userDivision = user?.division || 'End-User Division';
 
-  // Filter IAR records for user's division
-  const divisionIARs = iarRecords.filter(
-    (iar) => iar.requisitioningOffice.toLowerCase().includes(userDivision.toLowerCase())
+  // --- DATA FILTERING ---
+  // 1. For Delivery (Pending Deliveries)
+  const pendingDeliveries = deliveries.filter(
+    (d) => d.item.toLowerCase().includes(searchQuery.toLowerCase())
+  ).reverse();
+
+  // 2. Delivered (IAR Records for this division)
+  const divisionIARs = iarRecords.filter((iar) => 
+    iar.requisitioningOffice.toLowerCase().includes(userDivision.toLowerCase())
   );
 
-  // Filter RIS records for user's division
-  const divisionRIS = risRecords.filter(
-    (ris) => ris.division.toLowerCase().includes(userDivision.toLowerCase())
+  // 3. Distributed (RIS Records for this division)
+  const divisionRIS = risRecords.filter((ris) => 
+    ris.division.toLowerCase().includes(userDivision.toLowerCase())
   );
 
-  // Recent deliveries
-  const recentDeliveries = deliveries.slice(-10).reverse();
-
-  const filteredDeliveries = recentDeliveries.filter(
-    (delivery) =>
-      delivery.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      delivery.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      delivery.item.toLowerCase().includes(searchQuery.toLowerCase())
+  // 4. In Stock (Available balances from Stock Cards)
+  const availableStock = (stockCards || []).filter((card) => 
+    // FIXED: using 'description' instead of 'itemDescription'
+    card.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Helper to safely format currency
+  const formatCurrency = (amount: any) => Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900"></h2>
-        <p className="text-gray-600 mt-1">View procurement records for {userDivision}</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
+          <p className="text-slate-500 text-sm mt-1 flex items-center">
+            <Badge variant="outline" className="mr-2 bg-slate-100 text-slate-600 border-slate-200">{userDivision}</Badge>
+            Read-only viewer account
+          </p>
+        </div>
+        
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            type="text"
+            placeholder="Search item descriptions..."
+            className="pl-9 bg-white border-slate-200 shadow-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
-
-      {/* Statistics Cards */}
+      {/* Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">IAR Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{divisionIARs.length}</div>
-            <p className="text-xs text-gray-500 mt-1">Inspection and Acceptance Reports</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">RIS Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{divisionRIS.length}</div>
-            <p className="text-xs text-gray-500 mt-1">Requisition and Issue Slips</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Deliveries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{deliveries.length}</div>
-            <p className="text-xs text-gray-500 mt-1">All procurement deliveries</p>
-          </CardContent>
-        </Card>
+        <MetricCard 
+          title="IAR Records" 
+          value={divisionIARs.length} 
+          subtitle="Inspections & Acceptances" 
+          icon={FileText} 
+          colorClass="text-purple-600" 
+          bgClass="bg-purple-50" 
+        />
+        <MetricCard 
+          title="RIS Records" 
+          value={divisionRIS.length} 
+          subtitle="Requisitions & Issues" 
+          icon={TrendingUp} 
+          colorClass="text-blue-600" 
+          bgClass="bg-blue-50" 
+        />
+        <MetricCard 
+          title="Total Deliveries" 
+          value={pendingDeliveries.length} 
+          subtitle="Overall tracking" 
+          icon={Package} 
+          colorClass="text-emerald-600" 
+          bgClass="bg-emerald-50" 
+        />
       </div>
 
-      {/* IAR Records for Division */}
-      {divisionIARs.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>IAR Records - {userDivision}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>IAR No.</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>PO Number</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {divisionIARs.map((iar) => {
-                  const total = iar.items.reduce((sum, item) => sum + item.totalCost, 0);
-                  return (
-                    <TableRow key={iar.id}>
-                      <TableCell className="font-medium">{iar.iarNo}</TableCell>
-                      <TableCell>{new Date(iar.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{iar.poNumber}</TableCell>
-                      <TableCell>{iar.supplier}</TableCell>
-                      <TableCell>{iar.items.length}</TableCell>
-                      <TableCell>₱{total.toLocaleString()}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabbed Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-3xl grid-cols-4 bg-slate-100 p-1 rounded-xl mb-6 h-12 border border-slate-200 shadow-sm">
+          <TabsTrigger value="for-delivery" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm">
+            <Truck className="w-4 h-4 mr-2 hidden sm:block"/> For Delivery
+          </TabsTrigger>
+          <TabsTrigger value="delivered" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm">
+            <Package className="w-4 h-4 mr-2 hidden sm:block"/> Delivered
+          </TabsTrigger>
+          <TabsTrigger value="distributed" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm">
+            <CheckCircle className="w-4 h-4 mr-2 hidden sm:block"/> Distributed
+          </TabsTrigger>
+          <TabsTrigger value="in-stock" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm">
+            <Boxes className="w-4 h-4 mr-2 hidden sm:block"/> In Stock
+          </TabsTrigger>
+        </TabsList>
 
-      {/* RIS Records for Division */}
-      {divisionRIS.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>RIS Records - {userDivision}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>RIS No.</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Total Requested</TableHead>
-                  <TableHead>Total Issued</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {divisionRIS.map((ris) => {
-                  const totalRequested = ris.items.reduce((sum, item) => sum + item.quantityRequested, 0);
-                  const totalIssued = ris.items.reduce((sum, item) => sum + item.quantityIssued, 0);
-                  return (
-                    <TableRow key={ris.id}>
-                      <TableCell className="font-medium">{ris.risNo}</TableCell>
-                      <TableCell>{new Date(ris.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{ris.items.length}</TableCell>
-                      <TableCell>{totalRequested}</TableCell>
-                      <TableCell>{totalIssued}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Deliveries */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Recent Deliveries</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search deliveries..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>PO Number</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Total Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDeliveries.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                    <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p>No deliveries found</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDeliveries.map((delivery) => (
-                  <TableRow key={delivery.id}>
-                    <TableCell>{new Date(delivery.date).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge className={delivery.type === 'Office Supplies' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}>
-                        {delivery.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{delivery.poNumber}</TableCell>
-                    <TableCell>{delivery.supplier}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{delivery.item}</p>
-                        {delivery.itemDescription && (
-                          <p className="text-xs text-gray-500">{delivery.itemDescription}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{delivery.quantity} {delivery.unit}</TableCell>
-                    <TableCell className="font-semibold">₱{delivery.totalPrice.toLocaleString()}</TableCell>
+        {/* TAB 1: For Delivery */}
+        <TabsContent value="for-delivery" className="mt-0">
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Unit of Measure</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">QTY</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {pendingDeliveries.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No data found.</TableCell></TableRow>
+                  ) : (
+                    pendingDeliveries.map((delivery, idx) => (
+                      <TableRow key={`delivery-${idx}`} className="hover:bg-slate-50 transition-colors">
+                        <TableCell className="font-medium text-slate-900">{userDivision}</TableCell>
+                        <TableCell className="text-slate-700">{delivery.item}</TableCell>
+                        <TableCell className="text-center text-slate-600">{delivery.unit}</TableCell>
+                        <TableCell className="text-center font-medium text-slate-800">{delivery.quantity}</TableCell>
+                        <TableCell className="text-right text-slate-600">₱{formatCurrency(delivery.unitPrice)}</TableCell>
+                        <TableCell className="text-right font-bold text-slate-900">₱{formatCurrency(delivery.totalPrice)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Info Card if no division-specific data */}
-      {divisionIARs.length === 0 && divisionRIS.length === 0 && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <ClipboardList className="h-6 w-6 text-blue-600 mt-1" />
-              <div>
-                <h3 className="font-semibold text-blue-900">No Division-Specific Records Yet</h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  There are currently no IAR or RIS records specifically for the {userDivision}. 
-                  You can still view general procurement deliveries above.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* TAB 2: Delivered */}
+        <TabsContent value="delivered" className="mt-0">
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Unit of Measure</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">QTY</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                   {divisionIARs.length === 0 ? (
+                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No data found.</TableCell></TableRow>
+                   ) : (
+                     divisionIARs.flatMap(iar => iar.items.map((item, idx) => (
+                        <TableRow key={`iar-${iar.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
+                          <TableCell className="font-medium text-slate-900">{iar.requisitioningOffice}</TableCell>
+                          <TableCell className="text-slate-700">{item.description}</TableCell>
+                          <TableCell className="text-center text-slate-600">{item.unit}</TableCell>
+                          <TableCell className="text-center font-medium text-slate-800">{item.quantity}</TableCell>
+                          <TableCell className="text-right text-slate-600">₱{formatCurrency(item.totalCost / (item.quantity || 1))}</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-700">₱{formatCurrency(item.totalCost)}</TableCell>
+                        </TableRow>
+                     )))
+                   )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 3: Distributed */}
+        <TabsContent value="distributed" className="mt-0">
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Unit of Measure</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">QTY</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                   {divisionRIS.length === 0 ? (
+                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No data found.</TableCell></TableRow>
+                   ) : (
+                     divisionRIS.flatMap(ris => ris.items.map((item, idx) => (
+                        <TableRow key={`ris-${ris.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
+                          <TableCell className="font-medium text-slate-900">{ris.division}</TableCell>
+                          <TableCell className="text-slate-700">{item.description}</TableCell>
+                          <TableCell className="text-center text-slate-600">{item.unit}</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{item.quantityIssued}</TableCell>
+                          {/* Note: RIS schema typically doesn't hold unit prices natively, falling back to 0 if undefined */}
+                          <TableCell className="text-right text-slate-600">₱{formatCurrency((item as any).unitPrice || 0)}</TableCell>
+                          <TableCell className="text-right font-bold text-blue-700">₱{formatCurrency(((item as any).unitPrice || 0) * item.quantityIssued)}</TableCell>
+                        </TableRow>
+                     )))
+                   )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 4: In Stock */}
+        <TabsContent value="in-stock" className="mt-0">
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Unit of Measure</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">QTY</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {availableStock.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No data found.</TableCell></TableRow>
+                  ) : (
+                    availableStock.map((stock, idx) => {
+                      // Retrieve latest transaction to get current balance and price info
+                      const latestTxn = stock.transactions[stock.transactions.length - 1];
+                      // FIXED: using 'balance' instead of 'balanceQuantity'
+                      const balanceQty = latestTxn ? latestTxn.balance : 0;
+                      
+                      // Fallback logic for price if not strictly tracked in stock card
+                      const currentPrice = 0; 
+                      
+                      return (
+                        <TableRow key={`stock-${stock.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
+                          <TableCell className="font-medium text-slate-900">Supply Room</TableCell>
+                          {/* FIXED: using 'description' instead of 'itemDescription' */}
+                          <TableCell className="text-slate-700">{stock.description}</TableCell>
+                          <TableCell className="text-center text-slate-600">Unit</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{balanceQty}</TableCell>
+                          <TableCell className="text-right text-slate-600">₱{formatCurrency(currentPrice)}</TableCell>
+                          <TableCell className="text-right font-bold text-amber-700">₱{formatCurrency(currentPrice * balanceQty)}</TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+      </Tabs>
     </div>
   );
 }
