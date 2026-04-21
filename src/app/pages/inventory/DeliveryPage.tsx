@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useData } from '../../context/DataContext';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -11,29 +12,14 @@ import { Badge } from '../../components/ui/badge';
 import { Plus, Truck, Package, CheckCircle, Boxes, Edit, Trash2, X, PlusCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
-// --- MOCK DATA --- 
-const initialForDelivery = [
-  {
-    id: 'po-1', type: 'Office Supplies', poNumber: 'PO-2026-001', poDate: '2026-04-01', supplier: 'Acme Corp',
-    items: [
-      { id: 'i1', itemDescription: 'BOND PAPER, A4', qty: 50, unit: 'Ream', price: 250 },
-      { id: 'i2', itemDescription: 'FOLDER, VERTICAL WITH METAL RINGBINDER, LEGAL', qty: 100, unit: 'Piece', price: 50 }
-    ]
-  },
-  {
-    id: 'po-2', type: 'Equipment', poNumber: 'PO-2026-002', poDate: '2026-04-05', supplier: 'Tech Solutions',
-    items: [
-      { id: 'i3', itemDescription: 'EPSON L3210 PRINTER', qty: 2, unit: 'Unit', price: 8500 }
-    ]
-  }
-];
-
 export function DeliveryPage() {
-  const [activeTab, setActiveTab] = useState("for-delivery");
+  const { 
+    forDeliveryRecords, addForDeliveryRecord, updateForDeliveryRecord, deleteForDeliveryRecord,
+    deliveredRecords, addDeliveredRecord, updateDeliveredRecord, deleteDeliveredRecord,
+    suppliers, ssnItems, risRecords, stockCards 
+  } = useData();
 
-  // States for the Data
-  const [forDeliveryRecords, setForDeliveryRecords] = useState(initialForDelivery);
-  const [deliveredRecords, setDeliveredRecords] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("for-delivery");
 
   // Dialog & Edit States
   const [isForDeliveryDialogOpen, setIsForDeliveryDialogOpen] = useState(false);
@@ -49,10 +35,21 @@ export function DeliveryPage() {
   const [currentItem, setCurrentItem] = useState({ itemDescription: '', qty: 0, unit: '', price: 0 });
   const [pendingItems, setPendingItems] = useState<any[]>([]);
 
-  // --- SAFE CURRENCY FORMATTER ---
   const formatCurrency = (amount: any) => {
     const validNumber = Number(amount) || 0;
     return validNumber.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // --- AUTOMATION RULES (FOR DELIVERY MODAL) ---
+  const handleSSNSelect = (desc: string) => {
+    const ssn = ssnItems.find(s => s.description === desc);
+    if (ssn) {
+      setCurrentItem(prev => ({
+        ...prev,
+        itemDescription: ssn.description,
+        unit: ssn.unit
+      }));
+    }
   };
 
   // --- AUTOMATION RULES (DELIVERED MODAL) ---
@@ -62,7 +59,6 @@ export function DeliveryPage() {
       setDeliveredForm({
         ...deliveredForm, poNumber: selectedPO, poDate: poDetails.poDate, supplier: poDetails.supplier, type: poDetails.type
       });
-      // Reset current item so the user has to pick a new one from the dropdown
       setCurrentItem({ itemDescription: '', qty: 0, unit: '', price: 0 });
     }
   };
@@ -72,10 +68,15 @@ export function DeliveryPage() {
     return po ? po.items : [];
   }, [deliveredForm.poNumber, forDeliveryRecords]);
 
-  const handleItemSelect = (desc: string) => {
+  const handlePOItemSelect = (desc: string) => {
     const itemDetails = availableItemsForSelectedPO.find((i: any) => i.itemDescription === desc);
     if (itemDetails) {
-      setCurrentItem({ itemDescription: desc, qty: itemDetails.qty, unit: itemDetails.unit, price: itemDetails.price });
+      setCurrentItem({ 
+        itemDescription: desc, 
+        qty: itemDetails.qty, // Prefill with PO quantity, admin can adjust if partial delivery
+        unit: itemDetails.unit, 
+        price: itemDetails.price 
+      });
     }
   };
 
@@ -109,23 +110,23 @@ export function DeliveryPage() {
   };
 
   // --- FOR DELIVERY (CRUD) ---
-  const submitForDelivery = (e: React.FormEvent) => {
+  const submitForDelivery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pendingItems.length === 0) return toast.error("Add at least one item.");
     
-    if (editingForDeliveryId) {
-      setForDeliveryRecords(forDeliveryRecords.map(r => 
-        r.id === editingForDeliveryId ? { ...r, ...forDeliveryForm, items: pendingItems } : r
-      ));
-      toast.success("Incoming PO updated successfully");
-    } else {
-      const newRecord = { id: Date.now().toString(), ...forDeliveryForm, items: pendingItems };
-      setForDeliveryRecords([...forDeliveryRecords, newRecord]);
-      toast.success("Incoming PO registered successfully");
+    try {
+      if (editingForDeliveryId) {
+        await updateForDeliveryRecord(editingForDeliveryId, { ...forDeliveryForm, items: pendingItems });
+        toast.success("Incoming PO updated successfully");
+      } else {
+        await addForDeliveryRecord({ ...forDeliveryForm, items: pendingItems } as any);
+        toast.success("Incoming PO registered successfully");
+      }
+      setIsForDeliveryDialogOpen(false);
+      resetForms();
+    } catch (error) {
+      toast.error("Failed to save PO record");
     }
-    
-    setIsForDeliveryDialogOpen(false);
-    resetForms();
   };
 
   const handleEditForDelivery = (record: any) => {
@@ -135,44 +136,46 @@ export function DeliveryPage() {
     setIsForDeliveryDialogOpen(true);
   };
 
-  const handleDeleteForDelivery = (id: string) => {
+  const handleDeleteForDelivery = async (id: string) => {
     if(confirm("Are you sure you want to delete this entire PO from Incoming deliveries?")) {
-      setForDeliveryRecords(forDeliveryRecords.filter(r => r.id !== id));
+      await deleteForDeliveryRecord(id);
       toast.success("Record deleted");
     }
   };
 
   // --- DELIVERED (CRUD) ---
-  const submitDelivered = (e: React.FormEvent) => {
+  const submitDelivered = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pendingItems.length === 0) return toast.error("Add at least one received item.");
 
-    const newDeliveries = pendingItems.map(item => ({
-      id: editingDeliveredId && pendingItems.length === 1 ? editingDeliveredId : Date.now().toString() + Math.random(),
-      dateDelivered: deliveredForm.dateDelivered,
-      type: deliveredForm.type,
-      itemDescription: item.itemDescription,
-      poNumber: deliveredForm.poNumber,
-      poDate: deliveredForm.poDate,
-      receiptNumber: deliveredForm.receiptNumber,
-      supplier: deliveredForm.supplier,
-      qty: item.qty,
-      unit: item.unit,
-      price: item.price,
-      amount: item.amount || (item.qty * item.price)
-    }));
+    try {
+      for (const item of pendingItems) {
+        const payload = {
+          dateDelivered: deliveredForm.dateDelivered,
+          type: deliveredForm.type,
+          itemDescription: item.itemDescription,
+          poNumber: deliveredForm.poNumber,
+          poDate: deliveredForm.poDate,
+          receiptNumber: deliveredForm.receiptNumber,
+          supplier: deliveredForm.supplier,
+          qty: item.qty,
+          unit: item.unit,
+          price: item.price,
+          amount: item.amount || (item.qty * item.price)
+        };
 
-    if (editingDeliveredId) {
-      const filtered = deliveredRecords.filter(d => d.id !== editingDeliveredId);
-      setDeliveredRecords([...filtered, ...newDeliveries]);
-      toast.success("Delivery record updated");
-    } else {
-      setDeliveredRecords([...deliveredRecords, ...newDeliveries]);
+        if (editingDeliveredId && pendingItems.length === 1) {
+          await updateDeliveredRecord(editingDeliveredId, payload);
+        } else {
+          await addDeliveredRecord(payload as any);
+        }
+      }
       toast.success("Supplies recorded as delivered");
+      setIsDeliveredDialogOpen(false);
+      resetForms();
+    } catch (error) {
+      toast.error("Failed to record delivery");
     }
-    
-    setIsDeliveredDialogOpen(false);
-    resetForms();
   };
 
   const handleEditDelivered = (record: any) => {
@@ -195,23 +198,47 @@ export function DeliveryPage() {
     setIsDeliveredDialogOpen(true);
   };
 
-  const handleDeleteDelivered = (id: string) => {
+  const handleDeleteDelivered = async (id: string) => {
     if(confirm("Are you sure you want to delete this delivery entry?")) {
-      setDeliveredRecords(deliveredRecords.filter(d => d.id !== id));
+      await deleteDeliveredRecord(id);
       toast.success("Entry deleted");
     }
   };
 
+  // --- DERIVED TABS DATA ---
+  const distributedItems = risRecords.flatMap(ris => 
+    ris.items.map(item => ({
+      office: ris.division,
+      itemDescription: item.description,
+      unit: item.unit,
+      qtyIssued: item.quantityIssued,
+      unitPrice: item.unitPrice || 0,
+      amount: item.amount || 0
+    }))
+  );
+
+  const inStockItems = (stockCards || []).map(stock => {
+    const latestTxn = stock.transactions?.[stock.transactions.length - 1];
+    const balanceQty = latestTxn ? latestTxn.balance : 0;
+    const currentPrice = stock.unitPrice || 0;
+    return {
+      office: 'Supply Room',
+      itemDescription: stock.description,
+      unit: stock.unit,
+      qty: balanceQty,
+      unitPrice: currentPrice,
+      amount: balanceQty * currentPrice
+    };
+  });
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Clean Page Header */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
         <p className="text-slate-500 text-sm mt-1">Track the entire lifecycle from PO delivery to physical distribution.</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* Modern Tabs List */}
         <TabsList className="grid w-full max-w-3xl grid-cols-4 bg-slate-100 p-1 rounded-xl mb-6 h-12 border border-slate-200 shadow-sm">
           <TabsTrigger value="for-delivery" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-lg text-slate-500 transition-all font-medium text-sm">
             <Truck className="w-4 h-4 mr-2"/> Incoming
@@ -243,7 +270,6 @@ export function DeliveryPage() {
                   <DialogTitle className="text-xl">{editingForDeliveryId ? 'Edit Incoming PO' : 'Register Incoming PO'}</DialogTitle>
                 </div>
                 <form onSubmit={submitForDelivery} className="p-6">
-                  {/* Form Grid */}
                   <div className="grid grid-cols-2 gap-5 mb-8">
                     <div className="space-y-1.5">
                       <Label className="text-slate-700">Type of Delivery</Label>
@@ -262,17 +288,30 @@ export function DeliveryPage() {
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-slate-700">Supplier <span className="text-red-500">*</span></Label>
-                      <Input required value={forDeliveryForm.supplier} onChange={e => setForDeliveryForm({...forDeliveryForm, supplier: e.target.value})} placeholder="Supplier Name" className="bg-white border-slate-200" />
+                      <Select required value={forDeliveryForm.supplier} onValueChange={(val) => setForDeliveryForm({...forDeliveryForm, supplier: val})}>
+                        <SelectTrigger className="bg-white border-slate-200">
+                          <SelectValue placeholder="Select supplier..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {suppliers.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   
-                  {/* Items Section */}
                   <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
                     <h4 className="font-semibold text-slate-800 flex items-center"><Package className="w-4 h-4 mr-2" /> Line Items</h4>
                     <div className="grid grid-cols-12 gap-3 items-end bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
                       <div className="col-span-5 space-y-1">
                         <Label className="text-xs text-slate-500">Item Description</Label>
-                        <Input className="h-9 text-sm border-slate-200" value={currentItem.itemDescription} onChange={e => setCurrentItem({...currentItem, itemDescription: e.target.value})} placeholder="Item name..." />
+                        <Select value={currentItem.itemDescription || undefined} onValueChange={handleSSNSelect}>
+                          <SelectTrigger className="h-9 text-sm border-slate-200">
+                            <SelectValue placeholder="Select item..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ssnItems.map(ssn => <SelectItem key={ssn.id} value={ssn.description}>{ssn.description}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="col-span-2 space-y-1">
                         <Label className="text-xs text-slate-500">Qty</Label>
@@ -280,7 +319,7 @@ export function DeliveryPage() {
                       </div>
                       <div className="col-span-2 space-y-1">
                         <Label className="text-xs text-slate-500">Unit</Label>
-                        <Input className="h-9 text-sm border-slate-200" value={currentItem.unit} onChange={e => setCurrentItem({...currentItem, unit: e.target.value})} placeholder="e.g. Box" />
+                        <Input readOnly className="h-9 text-sm border-slate-200 bg-slate-50" value={currentItem.unit} placeholder="Auto" />
                       </div>
                       <div className="col-span-2 space-y-1">
                         <Label className="text-xs text-slate-500">Unit Price</Label>
@@ -389,7 +428,6 @@ export function DeliveryPage() {
                   <DialogTitle className="text-xl text-blue-900">{editingDeliveredId ? 'Edit Received Record' : 'Log Received Delivery'}</DialogTitle>
                 </div>
                 <form onSubmit={submitDelivered} className="p-6">
-                  {/* Top Form Grid */}
                   <div className="grid grid-cols-2 gap-5 mb-8">
                     <div className="space-y-1.5">
                       <Label className="text-slate-700">Select PO Number <span className="text-red-500">*</span></Label>
@@ -414,7 +452,6 @@ export function DeliveryPage() {
                     </div>
                   </div>
 
-                  {/* Items from PO Section */}
                   <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
                     <h4 className="font-semibold text-slate-800 flex items-center"><Boxes className="w-4 h-4 mr-2" /> Verify Items Received</h4>
                     <div className="grid grid-cols-12 gap-3 items-end bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
@@ -424,9 +461,11 @@ export function DeliveryPage() {
                           key={deliveredForm.poNumber || 'item-select'} 
                           disabled={!deliveredForm.poNumber} 
                           value={currentItem.itemDescription || undefined} 
-                          onValueChange={handleItemSelect}
+                          onValueChange={handlePOItemSelect}
                         >
-                          <SelectTrigger className="h-9 text-sm border-slate-200"><SelectValue placeholder="Choose item..." /></SelectTrigger>
+                          <SelectTrigger className="h-9 text-sm border-slate-200">
+                            <SelectValue placeholder="Choose item..." />
+                          </SelectTrigger>
                           <SelectContent>
                             {availableItemsForSelectedPO.map((item: any, idx: number) => {
                               const desc = item.itemDescription || `Unknown Item ${idx}`;
@@ -441,7 +480,7 @@ export function DeliveryPage() {
                       </div>
                       <div className="col-span-2 space-y-1">
                         <Label className="text-xs text-slate-500">Unit Price</Label>
-                        <Input className="h-9 text-sm border-slate-200" type="number" value={currentItem.price || ''} onChange={e => setCurrentItem({...currentItem, price: Number(e.target.value)})} />
+                        <Input readOnly className="h-9 text-sm border-slate-200 bg-slate-50" value={currentItem.price || ''} placeholder="Auto" />
                       </div>
                       <div className="col-span-3">
                         <Button type="button" onClick={handleAddPendingItem} className="h-9 w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-sm">Add to Receipt</Button>
@@ -546,41 +585,77 @@ export function DeliveryPage() {
         </TabsContent>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* TAB 3: DISTRIBUTED (Modern Empty State / Placeholder) */}
+        {/* TAB 3: DISTRIBUTED (Data Table derived from RIS) */}
         {/* ------------------------------------------------------------------------- */}
         <TabsContent value="distributed" className="mt-0">
-          <Card className="shadow-sm border-slate-200 border-dashed bg-slate-50/50">
-            <CardContent className="p-16 text-center flex flex-col items-center justify-center min-h-[400px]">
-              <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                 <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Distributed Records</h3>
-              <p className="text-slate-500 mt-2 max-w-sm">
-                Items that have been officially handed over and distributed to divisions via RIS (Requisition and Issue Slips) will be tracked in the main Inventory module.
-              </p>
-              <Button variant="outline" className="mt-6 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm" onClick={() => window.location.href='/inventory/supplies'}>
-                View RIS Records
-              </Button>
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Unit of Measure</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">QTY</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {distributedItems.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No distributed items found.</TableCell></TableRow>
+                  ) : (
+                    distributedItems.map((item, idx) => (
+                      <TableRow key={`dist-${idx}`} className="hover:bg-slate-50 transition-colors">
+                        <TableCell className="font-medium text-slate-900">{item.office}</TableCell>
+                        <TableCell className="text-slate-700 max-w-[250px] whitespace-normal">{item.itemDescription}</TableCell>
+                        <TableCell className="text-center text-slate-600">{item.unit}</TableCell>
+                        <TableCell className="text-center font-medium text-slate-800">{item.qtyIssued}</TableCell>
+                        <TableCell className="text-right text-slate-600">₱{formatCurrency(item.unitPrice)}</TableCell>
+                        <TableCell className="text-right font-bold text-slate-900">₱{formatCurrency(item.amount)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* TAB 4: IN STOCK (Modern Empty State / Placeholder) */}
+        {/* TAB 4: IN STOCK (Data Table derived from Stock Cards) */}
         {/* ------------------------------------------------------------------------- */}
         <TabsContent value="in-stock" className="mt-0">
-          <Card className="shadow-sm border-slate-200 border-dashed bg-slate-50/50">
-            <CardContent className="p-16 text-center flex flex-col items-center justify-center min-h-[400px]">
-              <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                 <Boxes className="w-10 h-10 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">In Stock Overview</h3>
-              <p className="text-slate-500 mt-2 max-w-sm">
-                Items that have been delivered but not yet requested or distributed sit in the supply room. Detailed stock levels are tracked in the Stock Cards.
-              </p>
-              <Button variant="outline" className="mt-6 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm" onClick={() => window.location.href='/inventory/supplies'}>
-                View Stock Cards
-              </Button>
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Unit of Measure</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">QTY</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inStockItems.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No stock records found.</TableCell></TableRow>
+                  ) : (
+                    inStockItems.map((item, idx) => (
+                      <TableRow key={`stock-${idx}`} className="hover:bg-slate-50 transition-colors">
+                        <TableCell className="font-medium text-slate-900">{item.office}</TableCell>
+                        <TableCell className="text-slate-700 max-w-[250px] whitespace-normal">{item.itemDescription}</TableCell>
+                        <TableCell className="text-center text-slate-600">{item.unit}</TableCell>
+                        <TableCell className="text-center font-medium text-slate-800">{item.qty}</TableCell>
+                        <TableCell className="text-right text-slate-600">₱{formatCurrency(item.unitPrice)}</TableCell>
+                        <TableCell className="text-right font-bold text-slate-900">₱{formatCurrency(item.amount)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
