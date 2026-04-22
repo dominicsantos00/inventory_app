@@ -385,8 +385,9 @@ export function DeliveryPage() {
 
           <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardContent className="p-0">
+              <div className="max-h-[55vh] overflow-y-auto">
               <Table>
-                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PO Details</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
@@ -425,6 +426,7 @@ export function DeliveryPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -543,8 +545,9 @@ export function DeliveryPage() {
 
           <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardContent className="p-0">
+              <div className="max-h-[55vh] overflow-y-auto">
               <Table>
-                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date Received</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</TableHead>
@@ -597,6 +600,7 @@ export function DeliveryPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -607,8 +611,9 @@ export function DeliveryPage() {
         <TabsContent value="distributed" className="mt-0">
           <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardContent className="p-0">
+              <div className="max-h-[55vh] overflow-y-auto">
               <Table>
-                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
                     <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
@@ -635,6 +640,7 @@ export function DeliveryPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -645,8 +651,9 @@ export function DeliveryPage() {
         <TabsContent value="in-stock" className="mt-0">
           <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardContent className="p-0">
+              <div className="max-h-[55vh] overflow-y-auto">
               <Table>
-                <TableHeader className="bg-slate-50 border-b border-slate-200">
+                <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Office</TableHead>
                     <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Item Description</TableHead>
@@ -673,6 +680,7 @@ export function DeliveryPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

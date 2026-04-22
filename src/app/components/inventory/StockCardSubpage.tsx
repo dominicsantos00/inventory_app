@@ -28,17 +28,18 @@ export function StockCardSubpage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-200">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock No.</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Unit</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Current Balance</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Transactions</TableHead>
-                <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock No.</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Balance</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Reorder Point</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {stockCards.length === 0 ? (
                 <TableRow>
@@ -70,6 +71,7 @@ export function StockCardSubpage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -155,15 +155,16 @@ export function RCCManagement() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>RCC Code</TableHead>
-              <TableHead>Office Name</TableHead>
-              <TableHead>Abbreviation</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">RCC Code</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Division/Office Name</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Abbreviation</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
               <TableRow key={item.id}>
@@ -193,6 +194,7 @@ export function RCCManagement() {
             ))}
           </TableBody>
         </Table>
+        </div>
 
         {filteredItems.length === 0 && (
           <div className="text-center py-8 text-gray-500">

@@ -274,16 +274,16 @@ export function RISSubpage({ }: { isEditMode?: boolean }) {
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="max-h-[60vh] overflow-y-auto">
             <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-200">
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-20">RIS No.</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-20">Date</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">Division</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">RCC</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-16">Items</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-36">Actions</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">RIS No.</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Division</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">RCC</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Items</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
                 </TableRow>
               </TableHeader>
 

@@ -220,16 +220,16 @@ export function SSNManagement() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>SSN Code</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Unit</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock Number</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Unit</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
               <TableRow key={item.id}>
@@ -260,6 +260,7 @@ export function SSNManagement() {
             ))}
           </TableBody>
         </Table>
+        </div>
 
         {filteredItems.length === 0 && (
           <div className="text-center py-8 text-gray-500">

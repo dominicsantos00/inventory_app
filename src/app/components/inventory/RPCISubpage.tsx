@@ -73,8 +73,9 @@ export function RPCISubpage() {
           </Select>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-200">
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">SSN Code</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</TableHead>
@@ -104,6 +105,7 @@ export function RPCISubpage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -114,13 +116,15 @@ export function RPCISubpage() {
             <CardTitle className="text-lg font-bold text-slate-900">Historical RPCI Records</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="max-h-[60vh] overflow-y-auto">
             <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-200">
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Report Number</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Count Date</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Items Count</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date of Count</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Items Counted</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Value</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Fund Cluster</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,6 +182,7 @@ export function RPCISubpage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}

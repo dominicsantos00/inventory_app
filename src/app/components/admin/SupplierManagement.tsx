@@ -135,14 +135,15 @@ export function SupplierManagement() {
         </CardHeader>
         
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-200">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Supplier Name</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact Information</TableHead>
-                <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Supplier Name</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact Information</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {filteredSuppliers.length === 0 ? (
                 <TableRow>
@@ -171,6 +172,7 @@ export function SupplierManagement() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
