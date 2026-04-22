@@ -665,6 +665,105 @@ app.delete('/api/suppliers/:id', async (req, res) => {
 });
 
 // ==========================================
+// INCOMING POs API (For Delivery Tab)
+// ==========================================
+app.get('/api/forDeliveryRecords', async (req, res) => {
+    try {
+        const [records] = await pool.query('SELECT id, type, po_number AS poNumber, DATE_FORMAT(po_date, "%Y-%m-%d") AS poDate, supplier FROM for_delivery_records ORDER BY po_date DESC');
+        const [items] = await pool.query('SELECT record_id, item_description AS itemDescription, qty, unit, price, amount FROM for_delivery_items');
+        
+        const parsedRecords = records.map(record => ({
+            ...record,
+            items: items.filter(item => item.record_id === record.id)
+        }));
+        res.json(parsedRecords);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/forDeliveryRecords', async (req, res) => {
+    const { type, poNumber, poDate, supplier, items } = req.body;
+    const id = Date.now().toString();
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        await connection.query(
+            'INSERT INTO for_delivery_records (id, type, po_number, po_date, supplier) VALUES (?, ?, ?, ?, ?)',
+            [id, type, poNumber, poDate, supplier]
+        );
+        
+        if (items && items.length > 0) {
+            const itemValues = items.map(item => [id, item.itemDescription, item.qty, item.unit, item.price, item.amount]);
+            await connection.query(
+                'INSERT INTO for_delivery_items (record_id, item_description, qty, unit, price, amount) VALUES ?',
+                [itemValues]
+            );
+        }
+        await connection.commit();
+        res.json({ message: 'Incoming PO registered successfully', id });
+    } catch (error) {
+        await connection.rollback();
+        res.status(500).json({ error: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+app.delete('/api/forDeliveryRecords/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM for_delivery_records WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Record deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// DELIVERED API (Received Supplies Tab)
+// ==========================================
+app.get('/api/deliveredRecords', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT id, DATE_FORMAT(date_delivered, "%Y-%m-%d") AS dateDelivered, type, item_description AS itemDescription, po_number AS poNumber, DATE_FORMAT(po_date, "%Y-%m-%d") AS poDate, receipt_number AS receiptNumber, supplier, qty, unit, price, amount FROM delivered_records ORDER BY date_delivered DESC');
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/deliveredRecords', async (req, res) => {
+    const { dateDelivered, type, itemDescription, poNumber, poDate, receiptNumber, supplier, qty, unit, price, amount } = req.body;
+    const id = Date.now().toString();
+    try {
+        // 1. Save to the new Delivered Records table
+        await pool.query(
+            'INSERT INTO delivered_records (id, date_delivered, type, item_description, po_number, po_date, receipt_number, supplier, qty, unit, price, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, dateDelivered, type, itemDescription, poNumber, poDate, receiptNumber, supplier, qty, unit, price, amount]
+        );
+
+        // 2. Seamlessly sync to legacy 'deliveries' table so IAR & Stock Cards continue working perfectly!
+        await pool.query(
+            'INSERT INTO deliveries (id, type, date, po_number, po_date, supplier, receipt_number, item, item_description, unit, quantity, unit_price, total_price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [`del_${id}`, type, dateDelivered, poNumber, poDate, supplier, receiptNumber, itemDescription, itemDescription, unit, qty, price, amount, 'pending']
+        );
+
+        res.json({ message: 'Delivery recorded successfully', id });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/deliveredRecords/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM delivered_records WHERE id = ?', [req.params.id]);
+        await pool.query('DELETE FROM deliveries WHERE id = ?', [`del_${req.params.id}`]);
+        res.json({ message: 'Delivery deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
 // RCC ITEMS API
 // ==========================================
 
