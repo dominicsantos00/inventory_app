@@ -365,8 +365,8 @@ export function IARSubpage() {
                     <span className="text-lg font-bold text-green-900">₱{Number(formData.items.reduce((sum, item) => sum + item.totalCost, 0)).toLocaleString()}</span>
                   </div>
 
-                  {/* --- FIX: Made the buttons sticky at the bottom! --- */}
-                  <div className="flex justify-end gap-3 py-4 border-t border-slate-200 bg-white sticky bottom-0 z-20 w-full shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] px-2">
+                  {/* --- Made the buttons sticky at the bottom! --- */}
+                  <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-slate-100">
                     <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="text-slate-600">Cancel</Button>
                     <Button type="submit" className="bg-green-600 hover:bg-green-700 shadow-sm px-8">{editingId ? 'Save Changes' : 'Create IAR'}</Button>
                   </div>
