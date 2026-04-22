@@ -264,10 +264,15 @@ export function IARSubpage() {
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700 shadow-sm text-white"><Plus className="mr-2 h-4 w-4" /> Create IAR</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+              
+              {/* --- FIX: Added max-h-[90vh] and overflow-y-auto so the modal is scrollable! --- */}
+              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] overflow-y-auto relative">
+                
+                {/* --- FIX: Made the header sticky so it stays at the top --- */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-20">
                   <DialogTitle className="text-xl">{editingId ? 'Edit IAR Record' : 'Create New IAR'}</DialogTitle>
                 </div>
+                
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -355,15 +360,17 @@ export function IARSubpage() {
                     ))}
                   </div>
 
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center mb-6">
                     <span className="text-sm font-semibold text-green-800">Grand Total</span>
                     <span className="text-lg font-bold text-green-900">₱{Number(formData.items.reduce((sum, item) => sum + item.totalCost, 0)).toLocaleString()}</span>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                  {/* --- FIX: Made the buttons sticky at the bottom! --- */}
+                  <div className="flex justify-end gap-3 py-4 border-t border-slate-200 bg-white sticky bottom-0 z-20 w-full shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] px-2">
                     <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="text-slate-600">Cancel</Button>
-                    <Button type="submit" className="bg-green-600 hover:bg-green-700 shadow-sm">{editingId ? 'Save Changes' : 'Create IAR'}</Button>
+                    <Button type="submit" className="bg-green-600 hover:bg-green-700 shadow-sm px-8">{editingId ? 'Save Changes' : 'Create IAR'}</Button>
                   </div>
+                  
                 </form>
               </DialogContent>
             </Dialog>
