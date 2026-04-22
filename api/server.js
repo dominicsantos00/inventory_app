@@ -519,7 +519,7 @@ app.delete('/api/equipment/:id', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
     try {
-        const query = `SELECT id, username, full_name AS fullName, role, division_id AS division, email FROM users`;
+        const query = `SELECT id, username, full_name AS fullName, role, division, email FROM users`;
         const [rows] = await pool.query(query);
         res.json(rows);
     } catch (error) {
@@ -552,7 +552,7 @@ app.post('/api/users', async (req, res) => {
         const trimmedDivision = division ? division.trim() : null;
         
         // ADDED: Insert the hashed password into the database
-        const query = `INSERT INTO users (id, username, full_name, role, division_id, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const query = `INSERT INTO users (id, username, full_name, role, division, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)`;
         await pool.query(query, [id, trimmedUsername, trimmedFullName, role, trimmedDivision, trimmedEmail, hashedPassword]);
         
         const newUser = {
@@ -577,10 +577,10 @@ app.put('/api/users/:id', async (req, res) => {
     try {
         if (password && password.trim() !== '') {
             const hashedPassword = await bcrypt.hash(password, 12);
-            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ?, password = ? WHERE id = ?`;
+            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division = ?, email = ?, password = ? WHERE id = ?`;
             await pool.query(query, [username, fullName, role, division || null, email, hashedPassword, id]);
         } else {
-            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division_id = ?, email = ? WHERE id = ?`;
+            const query = `UPDATE users SET username = ?, full_name = ?, role = ?, division = ?, email = ? WHERE id = ?`;
             await pool.query(query, [username, fullName, role, division || null, email, id]);
         }
         res.json({ message: 'User updated successfully!' });
