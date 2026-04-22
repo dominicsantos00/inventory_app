@@ -92,9 +92,6 @@ export function Equipment() {
 
   const formatCurrency = (amount: any) => Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
 
-  // ==========================================
-  // PRINT FUNCTION
-  // ==========================================
   const handlePrint = (record: any) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -195,14 +192,8 @@ export function Equipment() {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
-    // Wait for images to load before calling print
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 500);
+    setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
   };
-  // ==========================================
 
   const filteredList = (equipmentRecords || []).filter(eq => 
     eq.type.toLowerCase() === activeTab.toLowerCase() &&
@@ -249,7 +240,6 @@ export function Equipment() {
               </div>
               <form onSubmit={handleSubmit} className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  
                   {/* Left Column: Image & Equipment Details */}
                   <div className="md:col-span-1 space-y-6">
                     <div className="space-y-2">
@@ -286,7 +276,6 @@ export function Equipment() {
 
                   {/* Right Column: Accountability Details */}
                   <div className="md:col-span-2 grid grid-cols-2 gap-5">
-                    
                     <div className="col-span-2 border-b border-slate-100 pb-2 mb-2">
                       <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Form Information</h4>
                     </div>
@@ -335,7 +324,6 @@ export function Equipment() {
                       <Label className="text-slate-700">Releaser Position</Label>
                       <Input required value={formData.releaserPosition} onChange={e => setFormData({...formData, releaserPosition: e.target.value})} placeholder="Position/Title" className="border-slate-200" />
                     </div>
-
                   </div>
                 </div>
 
@@ -348,78 +336,79 @@ export function Equipment() {
           </Dialog>
         </div>
 
-        {/* Display Table for both Tabs */}
+        {/* --- SCROLLABLE TABLE TRICK APPLIED HERE --- */}
         <Card className="shadow-sm border-slate-200 overflow-hidden">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-200">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-16"></TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Property Details</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Accountable Person</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Acquisition</TableHead>
-                  <TableHead className="text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</TableHead>
-                  <TableHead className="text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredList.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-16 text-slate-500">
-                      <Monitor className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                      <p className="text-lg font-medium text-slate-700">No {activeTab.toUpperCase()} records found</p>
-                      <p className="text-sm mt-1">Issue a new property receipt to see it listed here.</p>
-                    </TableCell>
+            <div className="max-h-[60vh] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-16"></TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Property Details</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Accountable Person</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Acquisition</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredList.map((eq) => (
-                    <TableRow key={eq.id} className="group hover:bg-slate-50 transition-colors">
-                      <TableCell className="py-3">
-                        <div className="h-12 w-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
-                          {eq.imageUrl ? <img src={eq.imageUrl} alt="Item" className="object-cover w-full h-full" /> : <ImageIcon size={20} className="text-slate-400" />}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-900">{eq.itemDescription}</span>
-                          <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md w-fit mt-1 border border-indigo-100">
-                            {eq.formNumber} • Prop: {eq.propertyNumber}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-slate-800">{eq.accountablePerson}</span>
-                          <span className="text-xs text-slate-500">{eq.accountablePosition}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-slate-700">{new Date(eq.dateAcquired).toLocaleDateString()}</span>
-                          <span className="text-xs text-slate-500">PO: {eq.poNumber}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right py-3">
-                        <div className="flex flex-col items-end">
-                          <span className="font-bold text-slate-900">₱{formatCurrency(eq.amount)}</span>
-                          <span className="text-xs text-slate-500">{eq.quantity} {eq.unit}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right py-3">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {/* THE PRINT BUTTON IS NOW CONNECTED HERE */}
-                          <Button size="icon" variant="ghost" onClick={() => handlePrint(eq)} className="h-8 w-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50">
-                            <Printer className="w-4 h-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"><Edit className="w-4 h-4" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => handleDelete(eq.id)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredList.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-16 text-slate-500">
+                        <Monitor className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                        <p className="text-lg font-medium text-slate-700">No {activeTab.toUpperCase()} records found</p>
+                        <p className="text-sm mt-1">Issue a new property receipt to see it listed here.</p>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredList.map((eq) => (
+                      <TableRow key={eq.id} className="group hover:bg-slate-50 transition-colors">
+                        <TableCell className="py-3">
+                          <div className="h-12 w-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                            {eq.imageUrl ? <img src={eq.imageUrl} alt="Item" className="object-cover w-full h-full" /> : <ImageIcon size={20} className="text-slate-400" />}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-900">{eq.itemDescription}</span>
+                            <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md w-fit mt-1 border border-indigo-100">
+                              {eq.formNumber} • Prop: {eq.propertyNumber}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-800">{eq.accountablePerson}</span>
+                            <span className="text-xs text-slate-500">{eq.accountablePosition}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-slate-700">{new Date(eq.dateAcquired).toLocaleDateString()}</span>
+                            <span className="text-xs text-slate-500">PO: {eq.poNumber}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right py-3">
+                          <div className="flex flex-col items-end">
+                            <span className="font-bold text-slate-900">₱{formatCurrency(eq.amount)}</span>
+                            <span className="text-xs text-slate-500">{eq.quantity} {eq.unit}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right py-3">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="icon" variant="ghost" onClick={() => handlePrint(eq)} className="h-8 w-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50">
+                              <Printer className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"><Edit className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => handleDelete(eq.id)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </Tabs>
