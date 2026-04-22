@@ -265,108 +265,112 @@ export function IARSubpage() {
                 <Button className="bg-green-600 hover:bg-green-700 shadow-sm text-white"><Plus className="mr-2 h-4 w-4" /> Create IAR</Button>
               </DialogTrigger>
               
-              {/* --- FIX: Added max-h-[90vh] and overflow-y-auto so the modal is scrollable! --- */}
-              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] overflow-y-auto relative">
+              {/* --- FLEXBOX FIX: The modal is split into 3 clean, non-overlapping sections --- */}
+              <DialogContent className="max-w-4xl border-slate-200 shadow-xl p-0 flex flex-col max-h-[90vh] overflow-hidden">
                 
-                {/* --- FIX: Made the header sticky so it stays at the top --- */}
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-20">
+                {/* 1. FIXED HEADER */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
                   <DialogTitle className="text-xl">{editingId ? 'Edit IAR Record' : 'Create New IAR'}</DialogTitle>
                 </div>
                 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                  
+                  {/* 2. SCROLLABLE MIDDLE BODY */}
+                  <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="iarNo">IAR Number</Label>
+                        <Input id="iarNo" value={formData.iarNo} onChange={(e) => setFormData({ ...formData, iarNo: e.target.value })} placeholder="e.g., IAR-2026-001" required className="border-slate-200" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="date">Date</Label>
+                        <Input id="date" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required className="border-slate-200" />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="iarNo">IAR Number</Label>
-                      <Input id="iarNo" value={formData.iarNo} onChange={(e) => setFormData({ ...formData, iarNo: e.target.value })} placeholder="e.g., IAR-2026-001" required className="border-slate-200" />
+                      <Label htmlFor="poNumber">PO Number</Label>
+                      <SearchableSelect value={formData.poNumber} options={deliveries.map((d) => ({ value: d.poNumber, label: `${d.poNumber} - ${d.supplier}` }))} onSelect={handlePOSelect} placeholder="Search PO Number..." />
                     </div>
+
+                    {formData.poNumber && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg grid grid-cols-2 gap-2">
+                        <p className="text-sm text-blue-900"><strong>Supplier:</strong> {formData.supplier}</p>
+                        <p className="text-sm text-blue-900"><strong>PO Date:</strong> {safeDisplayDate(formData.poDate)}</p>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
-                      <Label htmlFor="date">Date</Label>
-                      <Input id="date" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required className="border-slate-200" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="poNumber">PO Number</Label>
-                    <SearchableSelect value={formData.poNumber} options={deliveries.map((d) => ({ value: d.poNumber, label: `${d.poNumber} - ${d.supplier}` }))} onSelect={handlePOSelect} placeholder="Search PO Number..." />
-                  </div>
-
-                  {formData.poNumber && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg grid grid-cols-2 gap-2">
-                      <p className="text-sm text-blue-900"><strong>Supplier:</strong> {formData.supplier}</p>
-                      <p className="text-sm text-blue-900"><strong>PO Date:</strong> {safeDisplayDate(formData.poDate)}</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="invoiceNo">Invoice Number</Label>
-                    <Input id="invoiceNo" value={formData.invoiceNo} onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })} placeholder="Enter Invoice Number" required className="border-slate-200" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="requisitioningOffice">Requisitioning Office</Label>
-                    <SearchableSelect value={formData.requisitioningOffice} options={rccItems.map((rcc) => ({ value: rcc.divisionName, label: rcc.divisionName }))} onSelect={handleOfficeSelect} placeholder="Search Office..." />
-                  </div>
-
-                  {formData.requisitioningOffice && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-900"><strong>Responsibility Center Code:</strong> {formData.responsibilityCenterCode}</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <Label>Items</Label>
-                      <Button type="button" size="sm" onClick={addItem} variant="outline" className="border-slate-200 shadow-sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+                      <Label htmlFor="invoiceNo">Invoice Number</Label>
+                      <Input id="invoiceNo" value={formData.invoiceNo} onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })} placeholder="Enter Invoice Number" required className="border-slate-200" />
                     </div>
 
-                    {formData.items.map((item, index) => (
-                      <div key={index} className="p-4 border border-slate-200 rounded-lg space-y-3 bg-slate-50/50">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-sm text-slate-800">Item {index + 1}</span>
-                          {formData.items.length > 1 && (
-                            <Button type="button" size="sm" variant="ghost" onClick={() => removeItem(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8">Remove</Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="requisitioningOffice">Requisitioning Office</Label>
+                      <SearchableSelect value={formData.requisitioningOffice} options={rccItems.map((rcc) => ({ value: rcc.divisionName, label: rcc.divisionName }))} onSelect={handleOfficeSelect} placeholder="Search Office..." />
+                    </div>
+
+                    {formData.requisitioningOffice && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-900"><strong>Responsibility Center Code:</strong> {formData.responsibilityCenterCode}</p>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <Label>Items</Label>
+                        <Button type="button" size="sm" onClick={addItem} variant="outline" className="border-slate-200 shadow-sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+                      </div>
+
+                      {formData.items.map((item, index) => (
+                        <div key={index} className="p-4 border border-slate-200 rounded-lg space-y-3 bg-slate-50/50">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-sm text-slate-800">Item {index + 1}</span>
+                            {formData.items.length > 1 && (
+                              <Button type="button" size="sm" variant="ghost" onClick={() => removeItem(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8">Remove</Button>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs">Stock Number / Description</Label>
+                            <SearchableSelect value={item.stockNo} options={ssnItems.map((ssn) => ({ value: ssn.code, label: `${ssn.code} - ${ssn.description}` }))} onSelect={(value) => handleStockNoSelect(index, value)} placeholder="Search item..." />
+                          </div>
+
+                          {item.stockNo && (
+                            <div className="p-2 bg-white border border-slate-100 rounded text-sm grid grid-cols-2 gap-2 shadow-sm text-slate-600">
+                              <p><strong>Desc:</strong> {item.description}</p>
+                              <p><strong>Unit:</strong> {item.unit}</p>
+                            </div>
                           )}
-                        </div>
 
-                        <div className="space-y-2">
-                          <Label className="text-xs">Stock Number / Description</Label>
-                          <SearchableSelect value={item.stockNo} options={ssnItems.map((ssn) => ({ value: ssn.code, label: `${ssn.code} - ${ssn.description}` }))} onSelect={(value) => handleStockNoSelect(index, value)} placeholder="Search item..." />
-                        </div>
-
-                        {item.stockNo && (
-                          <div className="p-2 bg-white border border-slate-100 rounded text-sm grid grid-cols-2 gap-2 shadow-sm text-slate-600">
-                            <p><strong>Desc:</strong> {item.description}</p>
-                            <p><strong>Unit:</strong> {item.unit}</p>
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Quantity</Label>
-                            <Input type="number" placeholder="Enter Quantity" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} required className="border-slate-200" />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Unit Cost (₱)</Label>
-                            <Input type="number" step="0.01" placeholder="Enter Unit Cost" value={item.unitCost} onChange={(e) => updateItem(index, 'unitCost', e.target.value)} required className="border-slate-200" />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Total Cost</Label>
-                            <div className="flex items-center px-3 py-2 bg-slate-100 rounded-md border border-slate-200 h-10">
-                              <span className="text-sm font-semibold text-slate-800">₱{Number(item.totalCost).toLocaleString()}</span>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Quantity</Label>
+                              <Input type="number" placeholder="Enter Quantity" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} required className="border-slate-200" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Unit Cost (₱)</Label>
+                              <Input type="number" step="0.01" placeholder="Enter Unit Cost" value={item.unitCost} onChange={(e) => updateItem(index, 'unitCost', e.target.value)} required className="border-slate-200" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Total Cost</Label>
+                              <div className="flex items-center px-3 py-2 bg-slate-100 rounded-md border border-slate-200 h-10">
+                                <span className="text-sm font-semibold text-slate-800">₱{Number(item.totalCost).toLocaleString()}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+                      <span className="text-sm font-semibold text-green-800">Grand Total</span>
+                      <span className="text-lg font-bold text-green-900">₱{Number(formData.items.reduce((sum, item) => sum + item.totalCost, 0)).toLocaleString()}</span>
+                    </div>
                   </div>
 
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center mb-6">
-                    <span className="text-sm font-semibold text-green-800">Grand Total</span>
-                    <span className="text-lg font-bold text-green-900">₱{Number(formData.items.reduce((sum, item) => sum + item.totalCost, 0)).toLocaleString()}</span>
-                  </div>
-
-                  {/* --- Made the buttons sticky at the bottom! --- */}
-                  <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-slate-100">
+                  {/* 3. FIXED FOOTER (Will never overlap inputs) */}
+                  <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3 shrink-0">
                     <Button type="button" variant="ghost" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="text-slate-600">Cancel</Button>
                     <Button type="submit" className="bg-green-600 hover:bg-green-700 shadow-sm px-8">{editingId ? 'Save Changes' : 'Create IAR'}</Button>
                   </div>
