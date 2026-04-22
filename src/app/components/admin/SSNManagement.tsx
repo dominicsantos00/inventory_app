@@ -225,16 +225,23 @@ export function SSNManagement() {
               <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">Stock Number</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-80">Description</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center w-28">Unit</TableHead>
                   <TableHead className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Actions</TableHead>
                 </TableRow>
               </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow key={item.id} className="group hover:bg-slate-50 transition-colors">
                 <TableCell className="font-medium">{item.code}</TableCell>
-                <TableCell>{item.description}</TableCell>
+                <TableCell>
+                        <div 
+                          className="text-slate-600 max-w-[250px] sm:max-w-[400px] line-clamp-2 leading-relaxed"
+                          title={item.description}
+                        >
+                          {item.description}
+                        </div>
+                      </TableCell>
                 <TableCell>{item.unit}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell className="text-right">
