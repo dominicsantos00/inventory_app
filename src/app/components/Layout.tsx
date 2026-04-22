@@ -178,28 +178,6 @@ export function Layout(): JSX.Element {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
-        {/* Modern Header (Sticky Top Bar) */}
-        <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 h-[73px] px-8 flex items-center justify-between shrink-0 sticky top-0 z-10">
-          {/* Global Search */}
-          <div className="flex items-center text-slate-500 bg-slate-100 px-3 py-2 rounded-lg w-96 transition-all focus-within:ring-2 focus-within:ring-green-500/20 focus-within:bg-white focus-within:border-green-200 border border-transparent">
-             <Search size={18} className="mr-2 text-slate-400" />
-             <input 
-                type="text" 
-                placeholder="Search inventory, POs, or reports..." 
-                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400" 
-             />
-          </div>
-          
-          {/* Action Icons */}
-          <div className="flex items-center gap-4">
-             <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100">
-               <Bell size={20} />
-               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border-2 border-white"></span>
-             </button>
-          </div>
-        </header>
-
         {/* Dynamic Page Content */}
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
