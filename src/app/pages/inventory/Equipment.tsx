@@ -12,7 +12,6 @@ import { Search, Monitor, Image as ImageIcon, Plus, Edit, Trash2, Printer, FileB
 import { toast } from 'sonner';
 
 export function Equipment() {
-  // POINTING TO THE NEW deliveredRecords TABLE!
   const { deliveredRecords, equipmentRecords, addEquipmentRecord, deleteEquipmentRecord } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,7 +37,6 @@ export function Equipment() {
     status: 'Active'
   });
 
-  // Only pull items that have physically arrived (Delivered)
   const equipmentDeliveries = useMemo(() => (deliveredRecords || []).filter(d => d.type === 'Equipment'), [deliveredRecords]);
 
   const handlePOSelect = (poNum: string) => {
@@ -66,8 +64,6 @@ export function Equipment() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Safety check to ensure they selected a PO
     if (!formData.poNumber) {
       toast.error('Please select a Source PO Number first!');
       return;
@@ -94,14 +90,126 @@ export function Equipment() {
     }
   };
 
+  const formatCurrency = (amount: any) => Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+  // ==========================================
+  // PRINT FUNCTION
+  // ==========================================
+  const handlePrint = (record: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to print documents.');
+      return;
+    }
+
+    const title = record.type === 'ICS' ? 'INVENTORY CUSTODIAN SLIP' : 'PROPERTY ACKNOWLEDGEMENT RECEIPT';
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Print ${record.type} - ${record.formNumber}</title>
+          <style>
+            body { font-family: 'Times New Roman', Times, serif; padding: 40px; color: black; }
+            h1 { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+            .header-info { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; }
+            table { w-full; width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px; }
+            th, td { border: 1px solid black; padding: 10px; text-align: center; font-size: 14px; }
+            th { font-weight: bold; }
+            .desc-col { text-align: left; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+            .sig-block { width: 45%; }
+            .sig-title { font-size: 14px; margin-bottom: 40px; }
+            .sig-line { border-bottom: 1px solid black; text-align: center; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+            .sig-pos { text-align: center; font-size: 12px; margin-top: 4px; }
+            .image-container { text-align: center; margin-top: 40px; }
+            .image-container img { max-width: 400px; max-height: 300px; border: 1px solid #ccc; }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 0.5in; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          
+          <div class="header-info">
+            <div><strong>Entity Name:</strong> Department of Environment and Natural Resources</div>
+            <div><strong>Fund Cluster:</strong> _________________</div>
+          </div>
+          
+          <div class="header-info">
+            <div><strong>${record.type} No:</strong> ${record.formNumber}</div>
+            <div><strong>PO Number:</strong> ${record.poNumber}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Property Number</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${record.quantity}</td>
+                <td>${record.unit}</td>
+                <td>₱${formatCurrency(record.amount)}</td>
+                <td class="desc-col">
+                  <strong>${record.itemDescription}</strong><br/>
+                  <span style="font-size: 12px; color: #444;">Supplier: ${record.supplier}</span>
+                </td>
+                <td>${record.propertyNumber}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="signatures">
+            <div class="sig-block">
+              <div class="sig-title">Received by:</div>
+              <div class="sig-line">${record.accountablePerson}</div>
+              <div class="sig-pos">${record.accountablePosition}</div>
+              <div class="sig-pos">Date: ${new Date(record.dateAcquired).toLocaleDateString()}</div>
+            </div>
+            
+            <div class="sig-block">
+              <div class="sig-title">Issued by:</div>
+              <div class="sig-line">${record.releaserName}</div>
+              <div class="sig-pos">${record.releaserPosition}</div>
+              <div class="sig-pos">Date: ${new Date(record.dateAcquired).toLocaleDateString()}</div>
+            </div>
+          </div>
+
+          ${record.imageUrl ? `
+            <div class="image-container">
+              <h3>Picture of Item</h3>
+              <img src="${record.imageUrl}" alt="Equipment Image" />
+            </div>
+          ` : ''}
+
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Wait for images to load before calling print
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 500);
+  };
+  // ==========================================
+
   const filteredList = (equipmentRecords || []).filter(eq => 
     eq.type.toLowerCase() === activeTab.toLowerCase() &&
     (eq.itemDescription.toLowerCase().includes(searchQuery.toLowerCase()) || 
      eq.accountablePerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
      eq.propertyNumber.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  const formatCurrency = (amount: any) => Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -299,7 +407,10 @@ export function Equipment() {
                       </TableCell>
                       <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"><Printer className="w-4 h-4" /></Button>
+                          {/* THE PRINT BUTTON IS NOW CONNECTED HERE */}
+                          <Button size="icon" variant="ghost" onClick={() => handlePrint(eq)} className="h-8 w-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50">
+                            <Printer className="w-4 h-4" />
+                          </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"><Edit className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => handleDelete(eq.id)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
                         </div>
