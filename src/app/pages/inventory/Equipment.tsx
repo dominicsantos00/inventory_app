@@ -12,8 +12,8 @@ import { Search, Monitor, Image as ImageIcon, Plus, Edit, Trash2, Printer, FileB
 import { toast } from 'sonner';
 
 export function Equipment() {
-  // LIVE CONTEXT CONNECTION
-  const { deliveries, equipmentRecords, addEquipmentRecord, deleteEquipmentRecord } = useData();
+  // POINTING TO THE NEW deliveredRecords TABLE!
+  const { deliveredRecords, equipmentRecords, addEquipmentRecord, deleteEquipmentRecord } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ics');
@@ -38,7 +38,8 @@ export function Equipment() {
     status: 'Active'
   });
 
-  const equipmentDeliveries = useMemo(() => deliveries.filter(d => d.type === 'Equipment'), [deliveries]);
+  // Only pull items that have physically arrived (Delivered)
+  const equipmentDeliveries = useMemo(() => (deliveredRecords || []).filter(d => d.type === 'Equipment'), [deliveredRecords]);
 
   const handlePOSelect = (poNum: string) => {
     const delivery = equipmentDeliveries.find(d => d.poNumber === poNum);
@@ -47,9 +48,9 @@ export function Equipment() {
         ...prev,
         poNumber: delivery.poNumber,
         supplier: delivery.supplier,
-        itemDescription: delivery.item,
+        itemDescription: delivery.itemDescription,
         unit: delivery.unit,
-        amount: delivery.unitPrice
+        amount: delivery.price
       }));
     }
   };
@@ -65,6 +66,13 @@ export function Equipment() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Safety check to ensure they selected a PO
+    if (!formData.poNumber) {
+      toast.error('Please select a Source PO Number first!');
+      return;
+    }
+
     try {
       await addEquipmentRecord(formData);
       toast.success(`${formData.type} Record Created Successfully!`);
@@ -121,7 +129,7 @@ export function Equipment() {
             </TabsTrigger>
           </TabsList>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setFormData({...formData, poNumber: '', itemDescription: '', supplier: ''}); }}>
             <DialogTrigger asChild>
               <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm w-full md:w-auto" onClick={() => setFormData(prev => ({...prev, type: activeTab.toUpperCase()}))}>
                 <Plus className="mr-2 h-4 w-4" /> Issue New {activeTab.toUpperCase()}
@@ -156,7 +164,8 @@ export function Equipment() {
                       <Select value={formData.poNumber} onValueChange={handlePOSelect}>
                         <SelectTrigger className="bg-white border-slate-200"><SelectValue placeholder="Select equipment PO..." /></SelectTrigger>
                         <SelectContent>
-                          {equipmentDeliveries.map(d => <SelectItem key={d.id} value={d.poNumber}>{d.poNumber} - {d.item}</SelectItem>)}
+                          {equipmentDeliveries.map(d => <SelectItem key={d.id} value={d.poNumber}>{d.poNumber} - {d.itemDescription}</SelectItem>)}
+                          {equipmentDeliveries.length === 0 && <SelectItem value="none" disabled>No received equipment found.</SelectItem>}
                         </SelectContent>
                       </Select>
                     </div>
