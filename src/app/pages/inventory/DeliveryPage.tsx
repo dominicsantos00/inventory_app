@@ -113,6 +113,7 @@ export function DeliveryPage() {
   const submitForDelivery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pendingItems.length === 0) return toast.error("Add at least one item.");
+    if (!forDeliveryForm.supplier) return toast.error("Please select a supplier.");
     
     try {
       if (editingForDeliveryId) {
@@ -232,7 +233,7 @@ export function DeliveryPage() {
   });
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
         <p className="text-slate-500 text-sm mt-1">Track the entire lifecycle from PO delivery to physical distribution.</p>
@@ -265,8 +266,8 @@ export function DeliveryPage() {
                   <Plus className="mr-2 h-4 w-4" /> Add Incoming PO
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
                   <DialogTitle className="text-xl">{editingForDeliveryId ? 'Edit Incoming PO' : 'Register Incoming PO'}</DialogTitle>
                 </div>
                 <form onSubmit={submitForDelivery} className="p-6">
@@ -286,17 +287,33 @@ export function DeliveryPage() {
                       <Label className="text-slate-700">PO Date <span className="text-red-500">*</span></Label>
                       <Input required type="date" value={forDeliveryForm.poDate} onChange={e => setForDeliveryForm({...forDeliveryForm, poDate: e.target.value})} className="bg-white border-slate-200" />
                     </div>
+                    
+                    {/* --- FIXED SUPPLIER DROPDOWN --- */}
                     <div className="space-y-1.5">
                       <Label className="text-slate-700">Supplier <span className="text-red-500">*</span></Label>
-                      <Select required value={forDeliveryForm.supplier} onValueChange={(val) => setForDeliveryForm({...forDeliveryForm, supplier: val})}>
+                      <Select required value={forDeliveryForm.supplier || undefined} onValueChange={(val) => setForDeliveryForm({...forDeliveryForm, supplier: val})}>
                         <SelectTrigger className="bg-white border-slate-200">
                           <SelectValue placeholder="Select supplier..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {suppliers.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                          {suppliers && suppliers.length > 0 ? (
+                            suppliers.map((s: any) => {
+                              // Safely handle different database column names for Supplier Name
+                              const supplierName = s.name || s.supplierName || s.supplier_name || s.supplier;
+                              return supplierName ? (
+                                <SelectItem key={s.id || supplierName} value={supplierName}>
+                                  {supplierName}
+                                </SelectItem>
+                              ) : null;
+                            })
+                          ) : (
+                            <SelectItem value="none" disabled>No suppliers found. Add in Master Data.</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
+                    {/* ------------------------------- */}
+
                   </div>
                   
                   <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
@@ -423,8 +440,8 @@ export function DeliveryPage() {
                   <Package className="mr-2 h-4 w-4" /> Receive Delivery
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0">
-                <div className="p-6 border-b border-slate-100 bg-blue-50/30">
+              <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b border-slate-100 bg-blue-50/30 sticky top-0 z-10">
                   <DialogTitle className="text-xl text-blue-900">{editingDeliveredId ? 'Edit Received Record' : 'Log Received Delivery'}</DialogTitle>
                 </div>
                 <form onSubmit={submitDelivered} className="p-6">

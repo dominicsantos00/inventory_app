@@ -656,6 +656,59 @@ app.delete('/api/ssnItems/:id', async (req, res) => {
 });
 
 // ==========================================
+// SUPPLIERS API (Master Data)
+// ==========================================
+
+// Get all suppliers
+app.get('/api/suppliers', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT id, name, contact FROM suppliers ORDER BY name ASC');
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add a new supplier
+app.post('/api/suppliers', async (req, res) => {
+    const { id, name, contact } = req.body;
+    const newId = id || Date.now().toString();
+    try {
+        await pool.query(
+            'INSERT INTO suppliers (id, name, contact) VALUES (?, ?, ?)', 
+            [newId, name, contact || '']
+        );
+        res.json({ message: 'Supplier added successfully', id: newId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update a supplier
+app.put('/api/suppliers/:id', async (req, res) => {
+    const { name, contact } = req.body;
+    try {
+        await pool.query(
+            'UPDATE suppliers SET name = ?, contact = ? WHERE id = ?', 
+            [name, contact || '', req.params.id]
+        );
+        res.json({ message: 'Supplier updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete a supplier
+app.delete('/api/suppliers/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM suppliers WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Supplier deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
 // RCC ITEMS API
 // ==========================================
 
