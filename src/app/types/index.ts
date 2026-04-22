@@ -155,3 +155,23 @@ export interface RPCIRecord {
     remarks: string;
   }>;
 }
+
+export interface EquipmentRecord {
+  id: string;
+  type: 'ICS' | 'PAR';
+  formNumber: string; // ICS Number or PAR Number
+  propertyNumber: string;
+  poNumber: string;
+  supplier: string;
+  accountablePerson: string;
+  accountablePosition: string;
+  releaserName: string;
+  releaserPosition: string;
+  dateAcquired: string;
+  itemDescription: string;
+  quantity: number;
+  unit: string;
+  amount: number;
+  imageUrl?: string; // Picture of Item as required by PPTX
+  status: 'Active' | 'Returned' | 'Disposed';
+}

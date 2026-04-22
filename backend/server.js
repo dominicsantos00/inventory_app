@@ -566,6 +566,51 @@ app.delete('/api/users/:id', async (req, res) => {
 });
 
 // ==========================================
+// EQUIPMENT (ICS & PAR) API
+// ==========================================
+
+app.get('/api/equipment', async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT id, type, form_number AS formNumber, property_number AS propertyNumber, 
+                   po_number AS poNumber, supplier, accountable_person AS accountablePerson, 
+                   accountable_position AS accountablePosition, releaser_name AS releaserName, 
+                   releaser_position AS releaserPosition, DATE_FORMAT(date_acquired, '%Y-%m-%d') AS dateAcquired, 
+                   item_description AS itemDescription, quantity, unit, amount, image_url AS imageUrl, status
+            FROM equipment_records
+            ORDER BY date_acquired DESC
+        `);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/equipment', async (req, res) => {
+    const { id, type, formNumber, propertyNumber, poNumber, supplier, accountablePerson, accountablePosition, releaserName, releaserPosition, dateAcquired, itemDescription, quantity, unit, amount, imageUrl, status } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO equipment_records 
+            (id, type, form_number, property_number, po_number, supplier, accountable_person, accountable_position, releaser_name, releaser_position, date_acquired, item_description, quantity, unit, amount, image_url, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id || Date.now().toString(), type, formNumber, propertyNumber, poNumber, supplier, accountablePerson, accountablePosition, releaserName, releaserPosition, dateAcquired, itemDescription, quantity, unit, amount, imageUrl || null, status || 'Active']
+        );
+        res.json({ message: 'Equipment record created successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/equipment/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM equipment_records WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Equipment record deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
 // SSN ITEMS API
 // ==========================================
 

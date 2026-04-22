@@ -56,7 +56,7 @@ interface DataContextType {
   updateRCCItem: (id: string, item: Partial<RCCItem>) => Promise<void>;
   deleteRCCItem: (id: string) => Promise<void>;
 
-  // Supplier Data (NEW)
+  // Supplier Data
   suppliers: SupplierItem[];
   addSupplier: (item: Omit<SupplierItem, 'id'>) => Promise<void>;
   updateSupplier: (id: string, item: Partial<SupplierItem>) => Promise<void>;
@@ -74,13 +74,13 @@ interface DataContextType {
   updateDelivery: (id: string, item: Partial<DeliveryItem>) => Promise<void>;
   deleteDelivery: (id: string) => Promise<void>;
 
-  // For Delivery Data (NEW)
+  // For Delivery Data
   forDeliveryRecords: ForDeliveryRecord[];
   addForDeliveryRecord: (record: Omit<ForDeliveryRecord, 'id'>) => Promise<void>;
   updateForDeliveryRecord: (id: string, record: Partial<ForDeliveryRecord>) => Promise<void>;
   deleteForDeliveryRecord: (id: string) => Promise<void>;
 
-  // Delivered Data (NEW)
+  // Delivered Data
   deliveredRecords: DeliveredRecord[];
   addDeliveredRecord: (record: Omit<DeliveredRecord, 'id'>) => Promise<void>;
   updateDeliveredRecord: (id: string, record: Partial<DeliveredRecord>) => Promise<void>;
@@ -123,6 +123,11 @@ interface DataContextType {
   addUser: (user: Omit<User, 'id'>) => Promise<void>;
   updateUser: (id: string, user: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+
+  // Equipment Management (ICS / PAR)
+  equipmentRecords: any[];
+  addEquipmentRecord: (record: any) => Promise<void>;
+  deleteEquipmentRecord: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -132,17 +137,20 @@ const API_URL = '/api';
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [ssnItems, setSSNItems] = useState<SSNItem[]>([]);
   const [rccItems, setRCCItems] = useState<RCCItem[]>([]);
-  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]); // NEW
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
   const [poRecords, setPORecords] = useState<PORecord[]>([]);
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
-  const [forDeliveryRecords, setForDeliveryRecords] = useState<ForDeliveryRecord[]>([]); // NEW
-  const [deliveredRecords, setDeliveredRecords] = useState<DeliveredRecord[]>([]); // NEW
+  const [forDeliveryRecords, setForDeliveryRecords] = useState<ForDeliveryRecord[]>([]);
+  const [deliveredRecords, setDeliveredRecords] = useState<DeliveredRecord[]>([]);
   const [iarRecords, setIARRecords] = useState<IARRecord[]>([]);
   const [risRecords, setRISRecords] = useState<RISRecord[]>([]);
   const [rsmiRecords, setRSMIRecords] = useState<RSMIRecord[]>([]);
   const [stockCards, setStockCards] = useState<StockCardRecord[]>([]);
   const [rpciRecords, setRPCIRecords] = useState<RPCIRecord[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  
+  // NEW: Equipment State
+  const [equipmentRecords, setEquipmentRecords] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -150,17 +158,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const endpoints = [
           { url: 'ssnItems', setter: setSSNItems },
           { url: 'rccItems', setter: setRCCItems },
-          { url: 'suppliers', setter: setSuppliers }, // NEW
+          { url: 'suppliers', setter: setSuppliers },
           { url: 'poRecords', setter: setPORecords },
           { url: 'deliveries', setter: setDeliveries },
-          { url: 'forDeliveryRecords', setter: setForDeliveryRecords }, // NEW
-          { url: 'deliveredRecords', setter: setDeliveredRecords }, // NEW
+          { url: 'forDeliveryRecords', setter: setForDeliveryRecords },
+          { url: 'deliveredRecords', setter: setDeliveredRecords },
           { url: 'iarRecords', setter: setIARRecords },
           { url: 'risRecords', setter: setRISRecords },
           { url: 'rsmiRecords', setter: setRSMIRecords },
           { url: 'stockCards', setter: setStockCards },
           { url: 'rpciRecords', setter: setRPCIRecords },
-          { url: 'users', setter: setUsers }
+          { url: 'users', setter: setUsers },
+          { url: 'equipment', setter: setEquipmentRecords } // <-- Added Equipment fetch
         ];
 
         for (const endpoint of endpoints) {
@@ -258,7 +267,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ------------------------------------
-  // Supplier Functions (NEW)
+  // Supplier Functions
   // ------------------------------------
   const addSupplier = async (item: Omit<SupplierItem, 'id'>) => {
     const res = await apiRequest('suppliers', 'POST', item);
@@ -327,7 +336,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ------------------------------------
-  // For Delivery Functions (NEW)
+  // For Delivery Functions
   // ------------------------------------
   const addForDeliveryRecord = async (record: Omit<ForDeliveryRecord, 'id'>) => {
     const res = await apiRequest('forDeliveryRecords', 'POST', record);
@@ -345,7 +354,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ------------------------------------
-  // Delivered Functions (NEW)
+  // Delivered Functions
   // ------------------------------------
   const addDeliveredRecord = async (record: Omit<DeliveredRecord, 'id'>) => {
     const res = await apiRequest('deliveredRecords', 'POST', record);
@@ -519,6 +528,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ------------------------------------
+  // Equipment Functions (NEW)
+  // ------------------------------------
+  const addEquipmentRecord = async (record: any) => {
+    try {
+      const res = await apiRequest('equipment', 'POST', record);
+      // Determine ID from response or fallback to local record id
+      const newRecord = { ...record, id: res.id || record.id };
+      setEquipmentRecords((prev) => [newRecord, ...prev]);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const deleteEquipmentRecord = async (id: string) => {
+    try {
+      await apiRequest(`equipment/${id}`, 'DELETE');
+      setEquipmentRecords((prev) => prev.filter((r) => r.id !== id));
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value: DataContextType = {
     ssnItems, addSSNItem, updateSSNItem, deleteSSNItem,
     rccItems, addRCCItem, updateRCCItem, deleteRCCItem,
@@ -533,6 +565,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     stockCards, addStockCard, updateStockCard, deleteStockCard,
     rpciRecords, addRPCIRecord, updateRPCIRecord, deleteRPCIRecord, fetchStockCardItemsForRPCI, autoGenerateRPCI,
     users, addUser, updateUser, deleteUser,
+    equipmentRecords, addEquipmentRecord, deleteEquipmentRecord, // <-- Exposing Equipment context
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
