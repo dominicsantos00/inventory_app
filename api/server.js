@@ -7,18 +7,8 @@ const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-// === 1. ADD THIS MOCK AUTH MIDDLEWARE ===
-app.use((req, res, next) => {
-    req.user = {
-        id: 'mock-user-1',
-        email: 'admin@system.com',
-        division_id: 'DIV-001', 
-        division_code: 'ADMIN'
-    };
-    next();
-});
-// ========================================
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files from the dist directory (built frontend)
 app.use(express.static(path.join(__dirname, '../dist')));
