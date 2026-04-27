@@ -63,6 +63,16 @@ export function Procurement() {
   // Helper to safely format currency
   const formatCurrency = (amount: any) => Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
 
+  // 1. Calculate total quantity of Supplies Received (from IARs)
+  const totalSuppliesDistributed = divisionIARs.reduce((total, iar) => {
+    return total + iar.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  }, 0);
+
+  // 2. Calculate total quantity of Equipment Received (from RIS records)
+  const totalEquipmentDistributed = divisionRIS.reduce((total, ris) => {
+    return total + ris.items.reduce((sum, item) => sum + (Number(item.quantityIssued) || 0), 0);
+  }, 0);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       
@@ -72,7 +82,6 @@ export function Procurement() {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
           <p className="text-slate-500 text-sm mt-1 flex items-center">
             <Badge variant="outline" className="mr-2 bg-slate-100 text-slate-600 border-slate-200">{userDivision}</Badge>
-            Read-only viewer account
           </p>
         </div>
         
@@ -91,18 +100,18 @@ export function Procurement() {
       {/* Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MetricCard 
-          title="IAR Records" 
-          value={divisionIARs.length} 
-          subtitle="Inspections & Acceptances" 
-          icon={FileText} 
+          title="Supplies Received" 
+          value={totalSuppliesDistributed} 
+          subtitle="Total item quantity" 
+          icon={Boxes} 
           colorClass="text-purple-600" 
           bgClass="bg-purple-50" 
         />
         <MetricCard 
-          title="RIS Records" 
-          value={divisionRIS.length} 
-          subtitle="Requisitions & Issues" 
-          icon={TrendingUp} 
+          title="Equipment Received" 
+          value={totalEquipmentDistributed} 
+          subtitle="Total item quantity" 
+          icon={CheckCircle} 
           colorClass="text-blue-600" 
           bgClass="bg-blue-50" 
         />
@@ -264,7 +273,6 @@ export function Procurement() {
                     availableStock.map((stock, idx) => {
                       // Retrieve latest transaction to get current balance and price info
                       const latestTxn = stock.transactions[stock.transactions.length - 1];
-                      // FIXED: using 'balance' instead of 'balanceQuantity'
                       const balanceQty = latestTxn ? latestTxn.balance : 0;
                       
                       // Fallback logic for price if not strictly tracked in stock card
