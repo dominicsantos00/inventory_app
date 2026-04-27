@@ -14,7 +14,7 @@ import { Plus, Truck, Package, CheckCircle, Boxes, Edit, Trash2, X, PlusCircle, 
 import { toast } from 'sonner';
 
 export function DeliveryPage() {
-  const { user } = useAuth(); // IMPORTED AUTH
+  const { user } = useAuth(); // Needed to check role & division
   const { 
     forDeliveryRecords, addForDeliveryRecord, updateForDeliveryRecord, deleteForDeliveryRecord,
     deliveredRecords, addDeliveredRecord, updateDeliveredRecord, deleteDeliveredRecord,
@@ -32,11 +32,9 @@ export function DeliveryPage() {
   const [editingForDeliveryId, setEditingForDeliveryId] = useState<string | null>(null);
   const [editingDeliveredId, setEditingDeliveredId] = useState<string | null>(null);
 
-  // Forms
   const [forDeliveryForm, setForDeliveryForm] = useState({ type: 'Office Supplies', poNumber: '', poDate: '', supplier: '' });
   const [deliveredForm, setDeliveredForm] = useState({ poNumber: '', poDate: '', supplier: '', receiptNumber: '', dateDelivered: '', type: '' });
   
-  // Items State
   const [currentItem, setCurrentItem] = useState({ itemDescription: '', qty: 0, unit: '', price: 0 });
   const [pendingItems, setPendingItems] = useState<any[]>([]);
 
@@ -47,21 +45,13 @@ export function DeliveryPage() {
 
   const handleSSNSelect = (desc: string) => {
     const ssn = ssnItems.find(s => s.description === desc);
-    if (ssn) {
-      setCurrentItem(prev => ({
-        ...prev,
-        itemDescription: ssn.description,
-        unit: ssn.unit
-      }));
-    }
+    if (ssn) setCurrentItem(prev => ({ ...prev, itemDescription: ssn.description, unit: ssn.unit }));
   };
 
   const handlePOSelect = (selectedPO: string) => {
     const poDetails = forDeliveryRecords.find(r => r.poNumber === selectedPO);
     if (poDetails) {
-      setDeliveredForm({
-        ...deliveredForm, poNumber: selectedPO, poDate: poDetails.poDate, supplier: poDetails.supplier, type: poDetails.type
-      });
+      setDeliveredForm({ ...deliveredForm, poNumber: selectedPO, poDate: poDetails.poDate, supplier: poDetails.supplier, type: poDetails.type });
       setCurrentItem({ itemDescription: '', qty: 0, unit: '', price: 0 });
     }
   };
@@ -73,34 +63,16 @@ export function DeliveryPage() {
 
   const handlePOItemSelect = (desc: string) => {
     const itemDetails = availableItemsForSelectedPO.find((i: any) => i.itemDescription === desc);
-    if (itemDetails) {
-      setCurrentItem({ 
-        itemDescription: desc, 
-        qty: itemDetails.qty,
-        unit: itemDetails.unit, 
-        price: itemDetails.price 
-      });
-    }
+    if (itemDetails) setCurrentItem({ itemDescription: desc, qty: itemDetails.qty, unit: itemDetails.unit, price: itemDetails.price });
   };
 
   const handleAddPendingItem = () => {
-    if (!currentItem.itemDescription || currentItem.qty <= 0 || currentItem.price <= 0) {
-      toast.error("Please fill all item fields properly");
-      return;
-    }
-    setPendingItems([...pendingItems, { 
-      itemDescription: currentItem.itemDescription, 
-      qty: currentItem.qty, 
-      unit: currentItem.unit, 
-      price: currentItem.price, 
-      amount: currentItem.qty * currentItem.price 
-    }]);
+    if (!currentItem.itemDescription || currentItem.qty <= 0 || currentItem.price <= 0) return toast.error("Please fill all item fields properly");
+    setPendingItems([...pendingItems, { itemDescription: currentItem.itemDescription, qty: currentItem.qty, unit: currentItem.unit, price: currentItem.price, amount: currentItem.qty * currentItem.price }]);
     setCurrentItem({ itemDescription: '', qty: 0, unit: '', price: 0 });
   };
 
-  const handleRemovePendingItem = (index: number) => {
-    setPendingItems(pendingItems.filter((_, i) => i !== index));
-  };
+  const handleRemovePendingItem = (index: number) => setPendingItems(pendingItems.filter((_, i) => i !== index));
 
   const resetForms = () => {
     setForDeliveryForm({ type: 'Office Supplies', poNumber: '', poDate: '', supplier: '' });
@@ -115,7 +87,6 @@ export function DeliveryPage() {
     e.preventDefault();
     if (pendingItems.length === 0) return toast.error("Add at least one item.");
     if (!forDeliveryForm.supplier) return toast.error("Please select a supplier.");
-    
     try {
       if (editingForDeliveryId) {
         await updateForDeliveryRecord(editingForDeliveryId, { ...forDeliveryForm, items: pendingItems });
@@ -124,11 +95,8 @@ export function DeliveryPage() {
         await addForDeliveryRecord({ ...forDeliveryForm, items: pendingItems } as any);
         toast.success("Incoming PO registered successfully");
       }
-      setIsForDeliveryDialogOpen(false);
-      resetForms();
-    } catch (error) {
-      toast.error("Failed to save PO record");
-    }
+      setIsForDeliveryDialogOpen(false); resetForms();
+    } catch (error) { toast.error("Failed to save PO record"); }
   };
 
   const handleEditForDelivery = (record: any) => {
@@ -148,54 +116,25 @@ export function DeliveryPage() {
   const submitDelivered = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pendingItems.length === 0) return toast.error("Add at least one received item.");
-
     try {
       for (const item of pendingItems) {
         const payload = {
-          dateDelivered: deliveredForm.dateDelivered,
-          type: deliveredForm.type,
-          itemDescription: item.itemDescription,
-          poNumber: deliveredForm.poNumber,
-          poDate: deliveredForm.poDate,
-          receiptNumber: deliveredForm.receiptNumber,
-          supplier: deliveredForm.supplier,
-          qty: item.qty,
-          unit: item.unit,
-          price: item.price,
-          amount: item.amount || (item.qty * item.price)
+          dateDelivered: deliveredForm.dateDelivered, type: deliveredForm.type, itemDescription: item.itemDescription,
+          poNumber: deliveredForm.poNumber, poDate: deliveredForm.poDate, receiptNumber: deliveredForm.receiptNumber,
+          supplier: deliveredForm.supplier, qty: item.qty, unit: item.unit, price: item.price, amount: item.amount || (item.qty * item.price)
         };
-
-        if (editingDeliveredId && pendingItems.length === 1) {
-          await updateDeliveredRecord(editingDeliveredId, payload);
-        } else {
-          await addDeliveredRecord(payload as any);
-        }
+        if (editingDeliveredId && pendingItems.length === 1) await updateDeliveredRecord(editingDeliveredId, payload);
+        else await addDeliveredRecord(payload as any);
       }
       toast.success("Supplies recorded as delivered");
-      setIsDeliveredDialogOpen(false);
-      resetForms();
-    } catch (error) {
-      toast.error("Failed to record delivery");
-    }
+      setIsDeliveredDialogOpen(false); resetForms();
+    } catch (error) { toast.error("Failed to record delivery"); }
   };
 
   const handleEditDelivered = (record: any) => {
     setEditingDeliveredId(record.id);
-    setDeliveredForm({
-      poNumber: record.poNumber || '',
-      poDate: record.poDate || '',
-      supplier: record.supplier || '',
-      receiptNumber: record.receiptNumber || '',
-      dateDelivered: record.dateDelivered || '',
-      type: record.type || ''
-    });
-    setPendingItems([{
-      itemDescription: record.itemDescription || '',
-      qty: record.qty || 0,
-      unit: record.unit || '',
-      price: record.price || 0,
-      amount: record.amount || (record.qty * record.price)
-    }]);
+    setDeliveredForm({ poNumber: record.poNumber || '', poDate: record.poDate || '', supplier: record.supplier || '', receiptNumber: record.receiptNumber || '', dateDelivered: record.dateDelivered || '', type: record.type || '' });
+    setPendingItems([{ itemDescription: record.itemDescription || '', qty: record.qty || 0, unit: record.unit || '', price: record.price || 0, amount: record.amount || (record.qty * record.price) }]);
     setIsDeliveredDialogOpen(true);
   };
 
@@ -206,7 +145,7 @@ export function DeliveryPage() {
     }
   };
 
-  // --- DERIVED TABS DATA (Division Filter Applied) ---
+  // --- DERIVED TABS DATA (Strict Division Filter Applied for End-Users) ---
   const distributedItems = risRecords.flatMap(ris => 
     ris.items.map(item => ({
       office: ris.division,
@@ -217,7 +156,7 @@ export function DeliveryPage() {
       amount: item.amount || 0
     }))
   ).filter(item => {
-    // If the user is an end-user, ONLY show items distributed to their specific division
+    // SECURITY FIX: If the user is an end-user, ONLY show items distributed to their specific division
     if (isEndUser) return item.office === user?.division;
     return true; // Admins see everything
   });
@@ -259,11 +198,8 @@ export function DeliveryPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ------------------------------------------------------------------------- */}
         {/* TAB 1: FOR DELIVERY (INCOMING) */}
-        {/* ------------------------------------------------------------------------- */}
         <TabsContent value="for-delivery" className="mt-0">
-          
           {/* ONLY ADMINS SEE THE ADD BUTTON */}
           {!isEndUser && (
             <div className="flex justify-end mb-4">
@@ -297,22 +233,14 @@ export function DeliveryPage() {
                       <div className="space-y-1.5">
                         <Label className="text-slate-700">Supplier <span className="text-red-500">*</span></Label>
                         <Select required value={forDeliveryForm.supplier || undefined} onValueChange={(val) => setForDeliveryForm({...forDeliveryForm, supplier: val})}>
-                          <SelectTrigger className="bg-white border-slate-200">
-                            <SelectValue placeholder="Select supplier..." />
-                          </SelectTrigger>
+                          <SelectTrigger className="bg-white border-slate-200"><SelectValue placeholder="Select supplier..." /></SelectTrigger>
                           <SelectContent>
                             {suppliers && suppliers.length > 0 ? (
                               suppliers.map((s: any) => {
                                 const supplierName = s.name || s.supplierName || s.supplier_name || s.supplier;
-                                return supplierName ? (
-                                  <SelectItem key={s.id || supplierName} value={supplierName}>
-                                    {supplierName}
-                                  </SelectItem>
-                                ) : null;
+                                return supplierName ? <SelectItem key={s.id || supplierName} value={supplierName}>{supplierName}</SelectItem> : null;
                               })
-                            ) : (
-                              <SelectItem value="none" disabled>No suppliers found. Add in Master Data.</SelectItem>
-                            )}
+                            ) : <SelectItem value="none" disabled>No suppliers found. Add in Master Data.</SelectItem>}
                           </SelectContent>
                         </Select>
                       </div>
@@ -324,12 +252,8 @@ export function DeliveryPage() {
                         <div className="col-span-5 space-y-1">
                           <Label className="text-xs text-slate-500">Item Description</Label>
                           <Select value={currentItem.itemDescription || undefined} onValueChange={handleSSNSelect}>
-                            <SelectTrigger className="h-9 text-sm border-slate-200">
-                              <SelectValue placeholder="Select item..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ssnItems.map(ssn => <SelectItem key={ssn.id} value={ssn.description}>{ssn.description}</SelectItem>)}
-                            </SelectContent>
+                            <SelectTrigger className="h-9 text-sm border-slate-200"><SelectValue placeholder="Select item..." /></SelectTrigger>
+                            <SelectContent>{ssnItems.map(ssn => <SelectItem key={ssn.id} value={ssn.description}>{ssn.description}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                         <div className="col-span-2 space-y-1">
@@ -411,9 +335,7 @@ export function DeliveryPage() {
                             </div>
                           </TableCell>
                           <TableCell className="max-w-[250px] whitespace-normal break-words font-medium text-slate-700">{item.itemDescription}</TableCell>
-                          <TableCell className="text-slate-600">
-                            {item.qty} <span className="text-slate-400 text-xs ml-1">{item.unit}</span>
-                          </TableCell>
+                          <TableCell className="text-slate-600">{item.qty} <span className="text-slate-400 text-xs ml-1">{item.unit}</span></TableCell>
                           <TableCell className="font-semibold text-slate-900">₱{formatCurrency((Number(item.qty) || 0) * (Number(item.price) || 0))}</TableCell>
                           
                           {/* ONLY ADMINS SEE THE ACTION ICONS */}
@@ -438,11 +360,8 @@ export function DeliveryPage() {
           </Card>
         </TabsContent>
 
-        {/* ------------------------------------------------------------------------- */}
         {/* TAB 2: DELIVERED (RECEIVED SUPPLIES) */}
-        {/* ------------------------------------------------------------------------- */}
         <TabsContent value="delivered" className="mt-0">
-          
           {/* ONLY ADMINS SEE THE ADD BUTTON */}
           {!isEndUser && (
             <div className="flex justify-end mb-4">
@@ -492,9 +411,7 @@ export function DeliveryPage() {
                             value={currentItem.itemDescription || undefined} 
                             onValueChange={handlePOItemSelect}
                           >
-                            <SelectTrigger className="h-9 text-sm border-slate-200">
-                              <SelectValue placeholder="Choose item..." />
-                            </SelectTrigger>
+                            <SelectTrigger className="h-9 text-sm border-slate-200"><SelectValue placeholder="Choose item..." /></SelectTrigger>
                             <SelectContent>
                               {availableItemsForSelectedPO.map((item: any, idx: number) => {
                                 const desc = item.itemDescription || `Unknown Item ${idx}`;
@@ -620,9 +537,7 @@ export function DeliveryPage() {
           </Card>
         </TabsContent>
 
-        {/* ------------------------------------------------------------------------- */}
-        {/* TAB 3: DISTRIBUTED (Data Table derived from RIS) */}
-        {/* ------------------------------------------------------------------------- */}
+        {/* TAB 3: DISTRIBUTED (Filtered to Division for End Users) */}
         <TabsContent value="distributed" className="mt-0">
           <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardContent className="p-0">
@@ -645,7 +560,7 @@ export function DeliveryPage() {
                       distributedItems.map((item, idx) => (
                         <TableRow key={`dist-${idx}`} className="hover:bg-slate-50 transition-colors">
                           <TableCell className="font-medium text-slate-900">{item.office}</TableCell>
-                          <TableCell className="text-slate-700 max-w-[250px] whitespace-normal">{item.itemDescription}</TableCell>
+                          <TableCell className="text-slate-700 max-w-[250px] whitespace-normal break-words">{item.itemDescription}</TableCell>
                           <TableCell className="text-center text-slate-600">{item.unit}</TableCell>
                           <TableCell className="text-center font-medium text-slate-800">{item.qtyIssued}</TableCell>
                           <TableCell className="text-right text-slate-600">₱{formatCurrency(item.unitPrice)}</TableCell>
@@ -660,9 +575,7 @@ export function DeliveryPage() {
           </Card>
         </TabsContent>
 
-        {/* ------------------------------------------------------------------------- */}
-        {/* TAB 4: IN STOCK (Data Table derived from Stock Cards) */}
-        {/* ------------------------------------------------------------------------- */}
+        {/* TAB 4: IN STOCK */}
         <TabsContent value="in-stock" className="mt-0">
           <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardContent className="p-0">
@@ -685,7 +598,7 @@ export function DeliveryPage() {
                       inStockItems.map((item, idx) => (
                         <TableRow key={`stock-${idx}`} className="hover:bg-slate-50 transition-colors">
                           <TableCell className="font-medium text-slate-900">{item.office}</TableCell>
-                          <TableCell className="text-slate-700 max-w-[250px] whitespace-normal">{item.itemDescription}</TableCell>
+                          <TableCell className="text-slate-700 max-w-[250px] whitespace-normal break-words">{item.itemDescription}</TableCell>
                           <TableCell className="text-center text-slate-600">{item.unit}</TableCell>
                           <TableCell className="text-center font-medium text-slate-800">{item.qty}</TableCell>
                           <TableCell className="text-right text-slate-600">₱{formatCurrency(item.unitPrice)}</TableCell>
