@@ -156,11 +156,9 @@ export function Layout(): JSX.Element {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">{user?.fullName}</p>
-                  <p className="text-xs text-slate-500 truncate">
-                    {user?.role === 'level1' && 'System Admin'}
-                    {user?.role === 'level2a' && 'Supplies Admin'}
-                    {user?.role === 'level2b' && 'Equipment Admin'}
-                    {user?.role === 'end-user' && `End User`}
+                  <p className="text-xs text-slate-500 truncate flex items-center">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                    @{user?.username}
                   </p>
                 </div>
               </div>
