@@ -4,11 +4,42 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'denr-car-inventory-secure-secret-2026';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// === REAL JWT AUTH MIDDLEWARE ===
+app.use((req, res, next) => {
+    // Skip token check for login, root, or non-API routes (like fetching React files)
+    if (req.path === '/api/login' || req.path === '/' || !req.path.startsWith('/api/')) {
+        return next();
+    }
+
+    // Look for the token in the headers
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Format: "Bearer <token>"
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
+
+    // Verify the token
+    jwt.verify(token, JWT_SECRET, (err, decodedUser) => {
+        if (err) {
+            return res.status(403).json({ error: 'Session expired or invalid token. Please log in again.' });
+        }
+        
+        // Attach the real user data (from the token) to req.user
+        req.user = decodedUser;
+        next();
+    });
+});
+// =================================
 
 // Serve static files from the dist directory (built frontend)
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -52,10 +83,20 @@ app.post('/api/login', async (req, res) => {
         // Remove the password from the object before sending it back to React for security
         delete user.password;
 
-        // Send success response back to React AuthContext
+        // We pack the user's ID and Division directly into the secure token
+        const tokenPayload = {
+            id: user.id,
+            email: user.email,
+            division_id: user.division, // Ensure this matches your DB column name
+            role: user.role
+        };
+
+        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '12h' }); // Token expires in 12 hours
+
+        // Send success response back to React
         res.status(200).json({
             user: user,
-            token: 'valid-token' // Placeholder token to satisfy React's login function
+            token: token // This is now a real, encrypted JWT
         });
 
     } catch (error) {

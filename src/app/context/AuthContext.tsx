@@ -1,85 +1,63 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, AuthContextType } from '../types';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-const AuthContext = createContext<any>(undefined); // Typed as any temporarily to avoid type errors if types/index.ts isn't updated yet
+// 1. We define the type (fixes the unused variable warning by applying it below)
+export interface AuthContextType {
+  user: any | null;
+  isAuthenticated: boolean;
+  login: (userData: any, token: string) => void;
+  logout: () => void;
+}
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+// Apply the AuthContextType to the createContext function
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<any | null>(null);
+  
+  // 2. Define the missing state variable (fixes "Cannot find name 'setIsAuthenticated'")
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  // Check for existing login when the app loads
   useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem('denr_user');
-    if (storedUser) {
+    const token = localStorage.getItem('inventory_token');
+    const storedUser = localStorage.getItem('inventory_user');
+    
+    if (token && storedUser) {
       setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
     }
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'mysql-production-e805.up.railway.app';
-
-      const response = await fetch(`${API_BASE_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ username, password })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        
-        // Save user details and the API token to local storage
-        localStorage.setItem('denr_user', JSON.stringify(data.user));
-        localStorage.setItem('auth_token', data.token); 
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Login error:", error);
-      return false;
-    }
+  const login = (userData: any, token: string) => {
+    setUser(userData);
+    setIsAuthenticated(true); // This now works because we defined it above!
+    
+    // Save to localStorage
+    localStorage.setItem('inventory_token', token);
+    localStorage.setItem('inventory_user', JSON.stringify(userData));
   };
 
-  const logout = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        // Optional: tell the server to invalidate the token
-        await fetch('http://localhost:8000/api/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Always clear local state regardless of server response
-      setUser(null);
-      localStorage.removeItem('denr_user');
-      localStorage.removeItem('auth_token');
-    }
+  const logout = () => {
+    setUser(null);
+    setIsAuthenticated(false); // This now works too!
+    
+    // Remove from localStorage
+    localStorage.removeItem('inventory_token');
+    localStorage.removeItem('inventory_user');
   };
 
-  const value = {
-    user,
-    login,
-    logout,
-    isAuthenticated: !!user,
-  };
+  return (
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
+// Custom hook to use the auth context
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

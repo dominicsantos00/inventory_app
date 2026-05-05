@@ -154,6 +154,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const fetchAllData = async () => {
+      // 1. Grab the token
+      const token = localStorage.getItem('inventory_token');
+      
+      // 2. Prepare headers with Authorization
+      const headers: HeadersInit = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       try {
         const endpoints = [
           { url: 'ssnItems', setter: setSSNItems },
@@ -169,20 +183,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           { url: 'stockCards', setter: setStockCards },
           { url: 'rpciRecords', setter: setRPCIRecords },
           { url: 'users', setter: setUsers },
-          { url: 'equipment', setter: setEquipmentRecords } // <-- Added Equipment fetch
+          { url: 'equipment', setter: setEquipmentRecords }
         ];
 
         for (const endpoint of endpoints) {
           try {
             const timestamp = new Date().getTime();
             const response = await fetch(`${API_URL}/${endpoint.url}?t=${timestamp}`, {
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              }
+              headers: headers // Use the secured headers here
             });
             
+            // 3. Handle Expired/Invalid Tokens
+            if (response.status === 401 || response.status === 403) {
+               console.warn("Session expired. Redirecting to login.");
+               localStorage.removeItem('inventory_token');
+               localStorage.removeItem('inventory_user');
+               window.location.href = '/login';
+               return; // Stop fetching other endpoints
+            }
+
             if (response.ok) {
               const data = await response.json();
               if (Array.isArray(data)) endpoint.setter(data);
@@ -207,15 +226,33 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         url = `${url}${separator}t=${new Date().getTime()}`;
       }
 
+      // 1. Grab the token
+      const token = localStorage.getItem('inventory_token');
+      
+      // 2. Prepare headers with Authorization
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
         method,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
+        headers, // Use the secured headers here
         body: data ? JSON.stringify(data) : undefined,
       });
+
+      // 3. Handle Expired/Invalid Tokens
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('inventory_token');
+        localStorage.removeItem('inventory_user');
+        window.location.href = '/login';
+        throw new Error('Session expired. Please log in again.');
+      }
 
       const payload = await response.json().catch(() => null);
       if (!response.ok) {

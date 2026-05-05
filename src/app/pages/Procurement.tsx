@@ -81,7 +81,7 @@ export function Procurement() {
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
           <p className="text-slate-500 text-sm mt-1 flex items-center">
-            <Badge variant="outline" className="mr-2 bg-slate-100 text-slate-600 border-slate-200">{userDivision}</Badge>
+            <Badge variant="outline" className="mr-2 bg-slate-100 text-slate-600 border-slate-200 text-sm">{userDivision}</Badge>
           </p>
         </div>
         
