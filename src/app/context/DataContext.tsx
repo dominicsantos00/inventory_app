@@ -195,11 +195,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             
             // 3. Handle Expired/Invalid Tokens
             if (response.status === 401 || response.status === 403) {
-               console.warn("Session expired. Redirecting to login.");
                localStorage.removeItem('inventory_token');
                localStorage.removeItem('inventory_user');
-               window.location.href = '/login';
-               return; // Stop fetching other endpoints
+               
+               // FIX: Only redirect if the user is NOT already on the login page
+               if (window.location.pathname !== '/login') {
+                   console.warn("Session missing/expired. Redirecting to login.");
+                   window.location.href = '/login';
+               }
+               return; // Stop fetching other endpoints so it doesn't spam the network
             }
 
             if (response.ok) {
@@ -250,7 +254,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (response.status === 401 || response.status === 403) {
         localStorage.removeItem('inventory_token');
         localStorage.removeItem('inventory_user');
-        window.location.href = '/login';
+        
+        // FIX: Only redirect if the user is NOT already on the login page
+        if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
         throw new Error('Session expired. Please log in again.');
       }
 
