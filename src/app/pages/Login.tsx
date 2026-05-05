@@ -27,12 +27,32 @@ export function Login() {
     setError('');
     setIsLoading(true);
 
-    const success = await login(username, password);
-    
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError('Invalid username or password');
+    try {
+      // 1. Send the username and password to your backend
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      // 2. If the backend says OK and gives us a token...
+      if (response.ok && data.token) {
+        
+        // 3. Pass the REAL user data and REAL token to the AuthContext
+        login(data.user, data.token);
+        
+        // 4. Force a full page load to the dashboard so DataContext sees the new token
+        window.location.href = '/dashboard'; 
+        
+      } else {
+        // Backend rejected the login
+        setError(data.error || 'Invalid username or password');
+      }
+    } catch (err) {
+      console.error("Login request failed", err);
+      setError('Network error. Please make sure the server is running.');
     }
     
     setIsLoading(false);
