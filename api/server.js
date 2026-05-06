@@ -1065,7 +1065,7 @@ app.get('/api/risRecords', async (req, res) => {
             DATE_FORMAT(date, '%Y-%m-%d') AS date, requested_by AS requestedBy, requesting_office AS requestingOffice,
             DATE_FORMAT(request_date, '%Y-%m-%d') AS requestDate 
             FROM ris_records 
-            WHERE division_id = ? OR division_id IS NULL
+            WHERE division = ? OR division IS NULL
             ORDER BY date DESC
         `, [userDivision]);
         
@@ -1088,7 +1088,7 @@ app.get('/api/risRecords', async (req, res) => {
 app.post('/api/risRecords', async (req, res) => {
     const { risNo, division, responsibilityCenterCode, date, requestedBy, requestingOffice, requestDate, items } = req.body;
     const id = generateId();
-    const userDivisionId = req.user.division_id;
+    const userDivision = req.user.division;
     const connection = await pool.getConnection();
     
     try {
@@ -1184,7 +1184,7 @@ app.post('/api/risRecords', async (req, res) => {
         const period = typeof date === 'string' && date.length >= 7 ? date.slice(0, 7) : null;
         const { rsmiId } = await createRsmiFromRis(connection, { risNo, period, division, items: normalizedItems });
 
-        await connection.query(`UPDATE rsmi_records SET division_id = ? WHERE id = ?`, [userDivisionId, rsmiId]);
+        await connection.query(`UPDATE rsmi_records SET division = ? WHERE id = ?`, [userDivision, rsmiId]);
 
         await connection.commit();
         res.json({ message: 'RIS record added successfully!', id, rsmiId });
@@ -1342,7 +1342,7 @@ app.get('/api/rsmiRecords', async (req, res) => {
         
         // Get RSMI records for user's division only
         const [records] = await pool.query(`
-            SELECT id, report_no AS reportNo, period, division_id 
+            SELECT id, report_no AS reportNo, period, division
             FROM rsmi_records 
             WHERE division = ? OR division IS NULL
             ORDER BY period DESC
