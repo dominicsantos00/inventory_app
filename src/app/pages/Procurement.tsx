@@ -43,26 +43,38 @@ export function Procurement() {
   const isAdmin = user?.role === 'admin';
   const userDivision = user?.division || '';
 
-  // 2. Tab Data Logic (Based on the PDF Guidelines)
-  // For Delivery & Delivered: Global for everyone to see what the supply room is receiving
-  const displayForDelivery = forDeliveryRecords; 
-  const displayDelivered = iarRecords; 
+  // 2. Strict Tab Data Filtering
+  // Admin sees everything. End-Users ONLY see records attached to their specific division.
+  const displayForDelivery = isAdmin 
+    ? forDeliveryRecords 
+    : forDeliveryRecords.filter((record: any) => {
+        // Hide global pending deliveries from End-Users unless explicitly tagged for their division
+        const dept = record.division || record.requisitioningOffice || record.requestingOffice;
+        return dept === userDivision;
+      }); 
+
+  const displayDelivered = isAdmin 
+    ? iarRecords 
+    : iarRecords.filter((record: any) => record.requisitioningOffice === userDivision); 
   
-  // Distributed: Handled by our secure backend, so we just use the array (Admin sees all, End-User sees theirs)
-  const displayDistributed = risRecords;
-  const displayInStock = stockCards;
+  const displayDistributed = isAdmin 
+    ? risRecords 
+    : risRecords.filter((record: any) => record.division === userDivision);
+
+  const displayInStock = stockCards; // Supply room stock remains globally visible
 
   // 3. Dynamic Dashboard Metric Calculations
-  // If Admin: Total of ALL supplies received globally (IAR)
-  // If End-User: Total of ONLY the supplies distributed specifically to their division (RIS)
-  const totalSuppliesReceived = isAdmin 
-    ? displayDelivered.reduce((total, iar) => total + iar.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0), 0)
-    : displayDistributed.reduce((total, ris) => total + ris.items.reduce((sum: number, item: any) => sum + (Number(item.quantityIssued) || 0), 0), 0);
+  
+  // Calculates total items from the DELIVERED tab (IARs)
+  const totalSuppliesReceived = displayDelivered.reduce((total, iar) => {
+    return total + iar.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
+  }, 0);
 
+  // Calculates total pending orders from the FOR DELIVERY tab
   const totalDeliveriesPending = displayForDelivery.length;
   
+  // Calculates current supply room balance
   const totalItemsInStock = displayInStock.reduce((total, stock) => {
-    // Get the latest balance from the stock card transactions
     const latestTxn = stock.transactions?.[stock.transactions.length - 1];
     return total + (latestTxn ? latestTxn.balance : 0);
   }, 0);
@@ -76,12 +88,12 @@ export function Procurement() {
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Delivery Management</h1>
-          <p className="text-slate-500 mt-1">Track and manage inventory movements across DENR-CAR</p>
+      <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
+          <p className="text-slate-500 text-sm mt-1 flex items-center">
+            <Badge variant="outline" className="mr-2 bg-slate-100 text-slate-600 border-slate-200 text-sm">{userDivision}</Badge>
+          </p>
         </div>
-      </div>
 
       {/* Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
