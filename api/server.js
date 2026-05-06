@@ -87,7 +87,7 @@ app.post('/api/login', async (req, res) => {
         const tokenPayload = {
             id: user.id,
             email: user.email,
-            division_id: user.division, // Ensure this matches your DB column name
+            division: user.division, // Ensure this matches your DB column name
             role: user.role
         };
 
@@ -991,7 +991,7 @@ app.delete('/api/iarRecords/:id', async (req, res) => {
 // Get RIS records for the authenticated user's division only
 app.get('/api/risRecords', async (req, res) => {
     try {
-        const userDivisionId = req.user.division_id;
+        const userDivision = req.user.division;
         
         // Get RIS records for user's division only
         const [records] = await pool.query(`
@@ -1001,7 +1001,7 @@ app.get('/api/risRecords', async (req, res) => {
             FROM ris_records 
             WHERE division_id = ? OR division_id IS NULL
             ORDER BY date DESC
-        `, [userDivisionId]);
+        `, [userDivision]);
         
         const [items] = await pool.query(`SELECT * FROM ris_items`);
 
@@ -1083,10 +1083,10 @@ app.post('/api/risRecords', async (req, res) => {
             return res.status(400).json({ error: 'Insufficient Stock', details: insufficient });
         }
 
-        // Save RIS record with division_id
+        // Save RIS record
         await connection.query(
-            `INSERT INTO ris_records (id, ris_no, division, responsibility_center_code, date, requested_by, requesting_office, request_date, division_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, risNo, division, responsibilityCenterCode, date, requestedBy || null, requestingOffice || null, requestDate || null, userDivisionId]
+            `INSERT INTO ris_records (id, ris_no, division, responsibility_center_code, date, requested_by, requesting_office, request_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, risNo, division, responsibilityCenterCode, date, requestedBy || null, requestingOffice || null, requestDate || null]
         );
 
         // FIX: Now inserting unit_price and amount into the database!
@@ -1133,13 +1133,13 @@ app.post('/api/risRecords', async (req, res) => {
 app.put('/api/risRecords/:id', async (req, res) => {
     const { id } = req.params;
     const { requestedBy, requestingOffice, requestDate } = req.body;
-    const userDivisionId = req.user.division_id;
+    const userDivision = req.user.division;
     const connection = await pool.getConnection();
 
     try {
         // Verify user owns this RIS record
         const [ris] = await connection.query(
-            'SELECT division_id FROM ris_records WHERE id = ?',
+            'SELECT division FROM ris_records WHERE id = ?',
             [id]
         );
         
@@ -1147,7 +1147,7 @@ app.put('/api/risRecords/:id', async (req, res) => {
             return res.status(404).json({ error: 'RIS record not found' });
         }
         
-        if (ris[0].division_id !== userDivisionId) {
+        if (ris[0].division !== userDivision) {
             return res.status(403).json({ error: 'You can only update your own RIS records' });
         }
 
@@ -1167,7 +1167,7 @@ app.put('/api/risRecords/:id', async (req, res) => {
 
 app.delete('/api/risRecords/:id', async (req, res) => {
     const { id } = req.params;
-    const userDivisionId = req.user.division_id;
+    const userDivision = req.user.division;
     const connection = await pool.getConnection();
 
     try {
@@ -1175,7 +1175,7 @@ app.delete('/api/risRecords/:id', async (req, res) => {
 
         // 1. Fetch RIS record
         const [risRecords] = await connection.query(
-            `SELECT id, ris_no, division, date, division_id FROM ris_records WHERE id = ?`,
+            `SELECT id, ris_no, division, date FROM ris_records WHERE id = ?`, 
             [id]
         );
 
@@ -1187,7 +1187,7 @@ app.delete('/api/risRecords/:id', async (req, res) => {
         const risRecord = risRecords[0];
         
         // Verify user owns this RIS record
-        if (risRecord.division_id !== userDivisionId) {
+        if (risRecord.division !== userDivision) {
             await connection.rollback();
             return res.status(403).json({ error: 'You can only delete your own RIS records' });
         }
@@ -1272,15 +1272,15 @@ app.delete('/api/risRecords/:id', async (req, res) => {
 // Get RSMI records for the authenticated user's division only
 app.get('/api/rsmiRecords', async (req, res) => {
     try {
-        const userDivisionId = req.user.division_id;
+        const userDivision = req.user.division;
         
         // Get RSMI records for user's division only
         const [records] = await pool.query(`
             SELECT id, report_no AS reportNo, period, division_id 
             FROM rsmi_records 
-            WHERE division_id = ? OR division_id IS NULL
+            WHERE division = ? OR division IS NULL
             ORDER BY period DESC
-        `, [userDivisionId]);
+        `, [userDivision]);
         
         const [items] = await pool.query(`SELECT * FROM rsmi_items`);
 
