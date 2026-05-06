@@ -1058,27 +1058,43 @@ app.delete('/api/iarRecords/:id', async (req, res) => {
 app.get('/api/risRecords', async (req, res) => {
     try {
         const userDivision = req.user.division;
+        const userRole = req.user.role; 
         
-        // Get RIS records for user's division only
-        const [records] = await pool.query(`
+        // 1. Build the secure query
+        let query = `
             SELECT id, ris_no AS risNo, division, responsibility_center_code AS responsibilityCenterCode, 
             DATE_FORMAT(date, '%Y-%m-%d') AS date, requested_by AS requestedBy, requesting_office AS requestingOffice,
             DATE_FORMAT(request_date, '%Y-%m-%d') AS requestDate 
             FROM ris_records 
-            WHERE division = ? OR division IS NULL
             ORDER BY date DESC
-        `, [userDivision]);
-        
+        `;
+        let params = [];
+
+        // 2. If the user is NOT an admin, lock the data to their exact division
+        if (userRole !== 'admin') {
+            query = `
+                SELECT id, ris_no AS risNo, division, responsibility_center_code AS responsibilityCenterCode, 
+                DATE_FORMAT(date, '%Y-%m-%d') AS date, requested_by AS requestedBy, requesting_office AS requestingOffice,
+                DATE_FORMAT(request_date, '%Y-%m-%d') AS requestDate 
+                FROM ris_records 
+                WHERE division = ?
+                ORDER BY date DESC
+            `;
+            params = [userDivision];
+        }
+
+        const [records] = await pool.query(query, params);
         const [items] = await pool.query(`SELECT * FROM ris_items`);
 
         const parsedRows = records.map(record => ({
             ...record,
-            divisionId: userDivisionId,
             items: items.filter(i => i.ris_record_id === record.id).map(i => ({
                 id: i.id, stockNo: i.stock_no, description: i.description, unit: i.unit, 
-                quantityRequested: i.quantity_requested, quantityIssued: i.quantity_issued, remarks: i.remarks
+                quantityRequested: i.quantity_requested, quantityIssued: i.quantity_issued, remarks: i.remarks,
+                unitPrice: i.unit_price, amount: i.amount
             }))
         }));
+        
         res.json(parsedRows);
     } catch (error) {
         res.status(500).json({ error: error.message });
