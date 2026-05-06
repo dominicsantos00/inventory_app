@@ -924,9 +924,45 @@ app.post('/api/iarRecords', async (req, res) => {
         if (items && items.length > 0) {
             const childValues = items.map(item => [id, item.stockNo || null, item.description, item.unit, item.quantity, item.unitCost, item.totalCost]);
             await connection.query(`INSERT INTO iar_items (iar_record_id, stock_no, description, unit, quantity, unit_cost, total_cost) VALUES ?`, [childValues]);
+
+            // === FIX: AUTOMATICALLY ADD TO STOCK CARDS ===
+            for (const item of items) {
+                const stockNo = (item.stockNo || '').trim().toUpperCase();
+                const quantityReceived = toPositiveInt(item.quantity);
+
+                if (stockNo && quantityReceived > 0) {
+                    // 1. Get or Create the Stock Card
+                    const stockCardId = await getOrCreateStockCard(connection, {
+                        stockNo,
+                        description: item.description,
+                        unit: item.unit
+                    });
+
+                    // 2. Calculate the new balance
+                    const currentBalance = await getLatestBalanceByStockCardId(connection, stockCardId);
+                    const newBalance = currentBalance + quantityReceived;
+
+                    // 3. Log the transaction to increase available stock!
+                    await insertStockTransaction(connection, {
+                        stockCardId,
+                        date: date || new Date().toISOString().split('T')[0],
+                        reference: `IAR-${iarNo}`,
+                        received: quantityReceived,
+                        issued: 0,
+                        balance: newBalance,
+                        office: requisitioningOffice || 'Supply Room'
+                    });
+
+                    // 4. Sync to legacy deliveries to ensure pricing logic (RSMI) still works
+                    await connection.query(
+                        `INSERT INTO deliveries (id, type, date, po_number, po_date, supplier, receipt_number, item, item_description, unit, quantity, unit_price, total_price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [generateId(), 'Office Supplies', date || new Date().toISOString().split('T')[0], poNumber || 'N/A', poDate || new Date().toISOString().split('T')[0], supplier || 'N/A', invoiceNo || 'N/A', stockNo, item.description, item.unit, quantityReceived, item.unitCost, item.totalCost, 'received']
+                    );
+                }
+            }
         }
         await connection.commit();
-        res.json({ message: 'IAR record added successfully!', id });
+        res.json({ message: 'IAR record added and stock updated successfully!', id });
     } catch (error) {
         await connection.rollback();
         res.status(500).json({ error: error.message });
@@ -964,17 +1000,47 @@ app.put('/api/iarRecords/:id', async (req, res) => {
     }
 });
 
-// ADDED: DELETE route to remove IAR records
+// DELETE route to remove IAR records AND Reverse Stock
 app.delete('/api/iarRecords/:id', async (req, res) => {
     const { id } = req.params;
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
+
+        // === FIX: REVERSE STOCK TRANSACTIONS BEFORE DELETING ===
+        const [iarRecords] = await connection.query(`SELECT iar_no, date FROM iar_records WHERE id = ?`, [id]);
+        const [iarItems] = await connection.query(`SELECT stock_no, quantity FROM iar_items WHERE iar_record_id = ?`, [id]);
+
+        if (iarRecords.length > 0) {
+            const iar = iarRecords[0];
+
+            for (const item of iarItems) {
+                const stockNo = (item.stock_no || '').trim().toUpperCase();
+                if (stockNo) {
+                    const stockInfo = await getStockInfoByStockNo(connection, stockNo);
+                    if (stockInfo.stockCardId) {
+                        const newBalance = stockInfo.balance - item.quantity;
+                        
+                        await insertStockTransaction(connection, {
+                            stockCardId: stockInfo.stockCardId,
+                            date: iar.date,
+                            reference: `REVERSAL-IAR-${iar.iar_no}`,
+                            received: 0,
+                            issued: item.quantity, // Deduct the reversed amount
+                            balance: newBalance,
+                            office: 'Supply Room'
+                        });
+                    }
+                }
+            }
+        }
+        // ========================================================
+
         await connection.query('DELETE FROM iar_items WHERE iar_record_id = ?', [id]);
         await connection.query('DELETE FROM iar_records WHERE id = ?', [id]);
         await connection.commit();
-        res.json({ message: 'IAR record deleted successfully!' });
+        res.json({ message: 'IAR record deleted successfully and stock reversed!' });
     } catch (error) {
         await connection.rollback();
         console.error('Delete IAR Error:', error);
