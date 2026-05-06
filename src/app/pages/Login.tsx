@@ -82,7 +82,7 @@ export function Login() {
             </div>
             
             <h1 className="text-3xl font-extrabold leading-tight mb-4 tracking-tight text-white">
-              Inventory Management Supply <br /> 
+              Supply Inventory Management <br /> 
             </h1>
             
             <div className="w-12 h-1 bg-white mb-6" />

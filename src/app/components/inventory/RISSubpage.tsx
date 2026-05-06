@@ -115,12 +115,26 @@ export function RISSubpage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Basic validation to ensure required fields aren't empty
+    if (!formData.risNo || !formData.division) {
+      toast.error("Please fill in all required fields (RIS No. and Division).");
+      return;
+    }
+
     const cleanedData = {
       ...formData,
+      
+      // FIX 1: Ensure the database doesn't crash if an RCC isn't selected
+      responsibilityCenterCode: formData.responsibilityCenterCode || 'N/A', 
+      
+      // FIX 2: Convert empty strings to null for MySQL DATE columns
+      dateSai: formData.dateSai ? formData.dateSai : null, 
+
       items: formData.items.map(item => {
         // Find the unit price from the Stock Card to calculate the exact amount distributed
         const stock = stockCards.find(sc => sc.description === item.description);
-        const unitPrice = stock?.unitPrice || 0;
+        const unitPrice = (stock as any)?.unitPrice || 0;
         const qtyIssued = Number(item.quantityIssued) || 0;
         
         return {
@@ -141,8 +155,12 @@ export function RISSubpage() {
         await addRISRecord(cleanedData as any);
         toast.success('RIS created successfully');
       }
-      setIsDialogOpen(false); resetForm();
-    } catch (error) { toast.error('Failed to save RIS record'); }
+      setIsDialogOpen(false); 
+      resetForm();
+    } catch (error) { 
+      console.error(error);
+      toast.error('Failed to save RIS record'); 
+    }
   };
 
   const resetForm = () => {
