@@ -44,14 +44,30 @@ export function Procurement() {
   const userDivision = user?.division || '';
 
   // 2. Strict Tab Data Filtering
+  // Safer filtering: Only consider a PO "Completed" if all items were delivered
+  const completedPONumbers = forDeliveryRecords.filter(po => {
+      // Find all IARs that belong to this PO
+      const relatedIARs = iarRecords.filter((iar: any) => iar.poNumber === po.poNumber);
+      
+      // Add up all items received across all partial deliveries
+      const totalReceivedItems = relatedIARs.reduce((total: number, iar: any) => total + (iar.items?.length || 0), 0);
+      const expectedItems = po.items?.length || 0;
+
+      // Only hide the PO if we have received everything we asked for
+      return totalReceivedItems >= expectedItems && expectedItems > 0;
+  }).map(po => po.poNumber);
+
   // Admin sees everything. End-Users ONLY see records attached to their specific division.
-  const displayForDelivery = isAdmin 
+  const displayForDelivery = (isAdmin 
     ? forDeliveryRecords 
     : forDeliveryRecords.filter((record: any) => {
-        // Hide global pending deliveries from End-Users unless explicitly tagged for their division
         const dept = record.division || record.requisitioningOffice || record.requestingOffice;
         return dept === userDivision;
-      }); 
+      })
+  ).filter((pendingRecord: any) => {
+      // Auto-hide if this PO has already been completely delivered
+      return !completedPONumbers.includes(pendingRecord.poNumber);
+  });
 
   const displayDelivered = isAdmin 
     ? iarRecords 
@@ -64,16 +80,12 @@ export function Procurement() {
   const displayInStock = stockCards; // Supply room stock remains globally visible
 
   // 3. Dynamic Dashboard Metric Calculations
-  
-  // Calculates total items from the DELIVERED tab (IARs)
   const totalSuppliesReceived = displayDelivered.reduce((total, iar) => {
     return total + iar.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
   }, 0);
 
-  // Calculates total pending orders from the FOR DELIVERY tab
   const totalDeliveriesPending = displayForDelivery.length;
   
-  // Calculates current supply room balance
   const totalItemsInStock = displayInStock.reduce((total, stock) => {
     const latestTxn = stock.transactions?.[stock.transactions.length - 1];
     return total + (latestTxn ? latestTxn.balance : 0);
@@ -88,12 +100,12 @@ export function Procurement() {
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       
       {/* Header Section */}
-      <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Delivery Management</h2>
-          <p className="text-slate-500 text-sm mt-1 flex items-center">
-            <Badge variant="outline" className="mr-2 bg-slate-100 text-slate-600 border-slate-200 text-sm">{userDivision}</Badge>
-          </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Delivery Management</h1>
+          <p className="text-slate-500 mt-1">Track and manage inventory movements across DENR-CAR</p>
         </div>
+      </div>
 
       {/* Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -167,7 +179,7 @@ export function Procurement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayForDelivery.map((record, idx) => (
+                    displayForDelivery.map((record: any, idx: number) => (
                       <TableRow key={`delivery-${record.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
                         <TableCell className="font-medium text-slate-900">{record.poNumber}</TableCell>
                         <TableCell className="text-slate-600">{record.poDate}</TableCell>
@@ -207,7 +219,7 @@ export function Procurement() {
                       <TableCell colSpan={5} className="text-center py-8 text-slate-500">No delivered records found.</TableCell>
                     </TableRow>
                   ) : (
-                    displayDelivered.map((record, idx) => {
+                    displayDelivered.map((record: any, idx: number) => {
                       const totalQty = record.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
                       return (
                         <TableRow key={`iar-${record.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
@@ -248,7 +260,7 @@ export function Procurement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayDistributed.map((record, idx) => {
+                    displayDistributed.map((record: any, idx: number) => {
                       const totalQty = record.items.reduce((sum: number, item: any) => sum + (Number(item.quantityIssued) || 0), 0);
                       return (
                         <TableRow key={`ris-${record.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
@@ -285,7 +297,7 @@ export function Procurement() {
                       <TableCell colSpan={3} className="text-center py-8 text-slate-500">No stock history available.</TableCell>
                     </TableRow>
                   ) : (
-                    displayInStock.map((stock, idx) => {
+                    displayInStock.map((stock: any, idx: number) => {
                       const latestTxn = stock.transactions?.[stock.transactions.length - 1];
                       const balanceQty = latestTxn ? latestTxn.balance : 0;
                       

@@ -1212,32 +1212,27 @@ app.post('/api/risRecords', async (req, res) => {
 
 app.put('/api/risRecords/:id', async (req, res) => {
     const { id } = req.params;
-    const { requestedBy, requestingOffice, requestDate } = req.body;
-    const userDivision = req.user.division;
+    const { requestedBy, requestingOffice, requestDate, remarks } = req.body;
+    const userDivision = req.user?.division || 'N/A';
+    const userRole = req.user?.role;
+    
     const connection = await pool.getConnection();
 
     try {
-        // Verify user owns this RIS record
-        const [ris] = await connection.query(
-            'SELECT division FROM ris_records WHERE id = ?',
-            [id]
-        );
+        const [ris] = await connection.query('SELECT division FROM ris_records WHERE id = ?', [id]);
         
-        if (ris.length === 0) {
-            return res.status(404).json({ error: 'RIS record not found' });
-        }
-        
-        if (ris[0].division !== userDivision) {
+        if (ris.length === 0) return res.status(404).json({ error: 'RIS record not found' });
+        if (userRole !== 'admin' && ris[0].division !== userDivision) {
             return res.status(403).json({ error: 'You can only update your own RIS records' });
         }
 
-        // Only allow updating these fields to maintain stock-card audit integrity
+        // ONLY update metadata. Do not touch the items array to protect stock integrity!
         await connection.query(
             `UPDATE ris_records SET requested_by = ?, requesting_office = ?, request_date = ? WHERE id = ?`,
             [requestedBy || null, requestingOffice || null, requestDate || null, id]
         );
-
-        res.json({ message: 'RIS record updated successfully!' });
+        
+        res.json({ message: 'RIS metadata updated successfully. Quantities are locked for ledger integrity.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     } finally {
@@ -1280,22 +1275,23 @@ app.delete('/api/risRecords/:id', async (req, res) => {
 
         // 3. Reverse stock transactions for each item
         for (const item of risItems) {
-            const stockInfo = await getStockInfoByStockNo(connection, item.stock_no);
-
-            if (stockInfo.stockCardId) {
-                // Get the current balance before the RIS was issued
-                const restoredBalance = stockInfo.balance + item.quantity_issued;
-
-                // Create reverse transaction (received = quantity_issued, issued = 0)
-                await insertStockTransaction(connection, {
-                    stockCardId: stockInfo.stockCardId,
-                    date: risRecord.date,
-                    reference: `REVERSAL-RIS-${risRecord.ris_no}`,
-                    received: item.quantity_issued,
-                    issued: 0,
-                    balance: restoredBalance,
-                    office: risRecord.division || null,
-                });
+            const stockNo = (item.stock_no || '').trim().toUpperCase();
+            if (stockNo && item.quantity_issued > 0) {
+                const stockInfo = await getStockInfoByStockNo(connection, stockNo);
+                if (stockInfo.stockCardId) {
+                    // Add the quantity back to the current balance!
+                    const newBalance = stockInfo.balance + item.quantity_issued;
+                    
+                    await insertStockTransaction(connection, {
+                        stockCardId: stockInfo.stockCardId,
+                        date: risRecord.date,
+                        reference: `REVERSAL-RIS-${risRecord.ris_no}`,
+                        received: item.quantity_issued, // Register as received back into the supply room
+                        issued: 0,
+                        balance: newBalance,
+                        office: 'Supply Room (Returned)'
+                    });
+                }
             }
         }
 
@@ -1329,6 +1325,11 @@ app.delete('/api/risRecords/:id', async (req, res) => {
             `DELETE FROM ris_records WHERE id = ?`,
             [id]
         );
+
+        await connection.query(`
+            DELETE FROM rsmi_items 
+            WHERE reference_ris_id = ? OR description IN (SELECT description FROM ris_items WHERE ris_record_id = ?)
+        `, [id, id]);
 
         await connection.commit();
         res.json({ 
