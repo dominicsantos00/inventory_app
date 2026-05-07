@@ -39,50 +39,52 @@ export function Procurement() {
   
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Role Identification
+// 1. Role Identification
   const isAdmin = user?.role === 'admin';
   const userDivision = user?.division || '';
 
-  // 2. Strict Tab Data Filtering
-  // Safer filtering: Only consider a PO "Completed" if all items were delivered
-  const completedPONumbers = forDeliveryRecords.filter(po => {
-      // Find all IARs that belong to this PO
+  // 2. Safer Tab Data Filtering
+  const completedPONumbers = forDeliveryRecords.filter((po: any) => {
       const relatedIARs = iarRecords.filter((iar: any) => iar.poNumber === po.poNumber);
-      
-      // Add up all items received across all partial deliveries
       const totalReceivedItems = relatedIARs.reduce((total: number, iar: any) => total + (iar.items?.length || 0), 0);
       const expectedItems = po.items?.length || 0;
-
-      // Only hide the PO if we have received everything we asked for
       return totalReceivedItems >= expectedItems && expectedItems > 0;
-  }).map(po => po.poNumber);
+  }).map((po: any) => po.poNumber);
 
-  // Admin sees everything. End-Users ONLY see records attached to their specific division.
+  // FIX 1: Smart PO Filtering
   const displayForDelivery = (isAdmin 
     ? forDeliveryRecords 
     : forDeliveryRecords.filter((record: any) => {
         const dept = record.division || record.requisitioningOffice || record.requestingOffice;
+        // If it's general office stock (no dept) or sent to Supply, everyone can see the pending order
+        if (!dept || dept.toLowerCase().includes('supply')) return true;
+        // Otherwise, only show it if it strictly matches their division
         return dept === userDivision;
       })
-  ).filter((pendingRecord: any) => {
-      // Auto-hide if this PO has already been completely delivered
-      return !completedPONumbers.includes(pendingRecord.poNumber);
-  });
+  ).filter((pendingRecord: any) => !completedPONumbers.includes(pendingRecord.poNumber));
 
+  // FIX 2: Smart IAR Filtering
   const displayDelivered = isAdmin 
     ? iarRecords 
-    : iarRecords.filter((record: any) => record.requisitioningOffice === userDivision); 
+    : iarRecords.filter((record: any) => {
+        const dept = record.requisitioningOffice;
+        // If it was delivered generally to the Supply Room, End-Users can see the history
+        if (!dept || dept.toLowerCase().includes('supply')) return true;
+        return dept === userDivision;
+      }); 
   
+  // Distributed records (RIS) ALWAYS have a division, so strict filtering is safe here
   const displayDistributed = isAdmin 
     ? risRecords 
     : risRecords.filter((record: any) => record.division === userDivision);
 
-  const displayInStock = stockCards; // Supply room stock remains globally visible
+  const displayInStock = stockCards; 
 
   // 3. Dynamic Dashboard Metric Calculations
-  const totalSuppliesReceived = displayDelivered.reduce((total, iar) => {
-    return total + iar.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
-  }, 0);
+  // FIX 3: End-Users should only see the count of items ISSUED to them (RIS), not global IARs
+  const totalSuppliesReceived = isAdmin 
+    ? displayDelivered.reduce((total, iar) => total + iar.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0), 0)
+    : displayDistributed.reduce((total, ris) => total + ris.items.reduce((sum: number, item: any) => sum + (Number(item.quantityIssued) || 0), 0), 0);
 
   const totalDeliveriesPending = displayForDelivery.length;
   
