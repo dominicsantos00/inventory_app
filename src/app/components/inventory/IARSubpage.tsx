@@ -347,8 +347,10 @@ export function IARSubpage() {
                           </div>
 
                           {item.stockNo && (
-                            <div className="p-2 bg-white border border-slate-100 rounded text-sm grid grid-cols-2 gap-2 shadow-sm text-slate-600">
-                              <p><strong>Desc:</strong> {item.description}</p>
+                            <div className="p-2 bg-white border border-slate-100 rounded text-sm flex flex-col gap-1 shadow-sm text-slate-600 overflow-hidden">
+                              <p className="break-words whitespace-normal leading-tight" title={item.description}>
+                                <strong>Desc:</strong> {item.description}
+                              </p>
                               <p><strong>Unit:</strong> {item.unit}</p>
                             </div>
                           )}
