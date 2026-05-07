@@ -54,7 +54,7 @@ function SearchableSelect({ value, options, onSelect, placeholder = 'Search...' 
 }
 
 export function IARSubpage() {
-  const { iarRecords, addIARRecord, updateIARRecord, deleteIARRecord, deliveries = [], rccItems = [], ssnItems = [] } = useData();
+  const { iarRecords, addIARRecord, updateIARRecord, deleteIARRecord, deliveries = [], rccItems = [], ssnItems = [], forDeliveryRecords = [] } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -91,8 +91,8 @@ export function IARSubpage() {
   }, [deleteIARRecord]);
 
   const handlePOSelect = (poNumber: string) => {
-    const delivery = deliveries.find((d) => d.poNumber === poNumber);
-    setFormData((prev) => delivery ? { ...prev, poNumber: delivery.poNumber, supplier: delivery.supplier, poDate: delivery.poDate } : { ...prev, poNumber });
+    const poData = forDeliveryRecords.find((d: any) => d.poNumber === poNumber);
+    setFormData((prev) => poData ? { ...prev, poNumber: poData.poNumber, supplier: poData.supplier, poDate: poData.poDate } : { ...prev, poNumber });
   };
 
   const handleOfficeSelect = (officeName: string) => {
@@ -295,7 +295,12 @@ export function IARSubpage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="poNumber">PO Number</Label>
-                      <SearchableSelect value={formData.poNumber} options={deliveries.map((d) => ({ value: d.poNumber, label: `${d.poNumber} - ${d.supplier}` }))} onSelect={handlePOSelect} placeholder="Search PO Number..." />
+                      <SearchableSelect 
+                        value={formData.poNumber} 
+                        options={forDeliveryRecords.map((d: any) => ({ value: d.poNumber, label: `${d.poNumber} - ${d.supplier}` }))} 
+                        onSelect={handlePOSelect} 
+                        placeholder="Search Pending PO..." 
+                      />
                     </div>
 
                     {formData.poNumber && (
