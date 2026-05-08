@@ -248,11 +248,12 @@ export function DeliveryPage() {
                     <Plus className="mr-2 h-4 w-4" /> Add Incoming PO
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] overflow-y-auto">
-                  <div className="p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
+                <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] flex flex-col">
+                  <div className="p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
                     <DialogTitle className="text-xl">Register Incoming PO</DialogTitle>
                   </div>
-                  <form onSubmit={submitForDelivery} className="p-6">
+                  <form onSubmit={submitForDelivery} className="flex flex-col flex-1 overflow-hidden">
+                    <div className="p-6 overflow-y-auto flex-1">
                     <div className="grid grid-cols-2 gap-5 mb-8">
                       <div className="space-y-1.5">
                         <Label className="text-slate-700">Type of Delivery</Label>
@@ -339,7 +340,8 @@ export function DeliveryPage() {
                         </Table>
                       )}
                     </div>
-                    <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+                    </div> {/* End scrollable area */}
+                    <div className="p-5 border-t border-slate-100 bg-white shrink-0 flex justify-end gap-3">
                       <Button type="button" variant="ghost" onClick={() => setIsForDeliveryDialogOpen(false)} className="text-slate-600">Cancel</Button>
                       <Button type="submit" className="bg-green-600 hover:bg-green-700">Register Incoming PO</Button>
                     </div>
@@ -405,11 +407,12 @@ export function DeliveryPage() {
                     <Package className="mr-2 h-4 w-4" /> Receive Delivery
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] overflow-y-auto">
-                  <div className="p-6 border-b border-slate-100 bg-blue-50/30 sticky top-0 z-10">
+                <DialogContent className="max-w-4xl border-slate-200 shadow-xl overflow-hidden p-0 max-h-[90vh] flex flex-col">
+                  <div className="p-6 border-b border-slate-100 bg-blue-50/30 shrink-0">
                     <DialogTitle className="text-xl text-blue-900">Log Received Delivery</DialogTitle>
                   </div>
-                  <form onSubmit={submitDelivered} className="p-6">
+                  <form onSubmit={submitDelivered} className="flex flex-col flex-1 overflow-hidden">
+                    <div className="p-6 overflow-y-auto flex-1">
                     <div className="grid grid-cols-2 gap-5 mb-8">
                       <div className="space-y-1.5">
                         <Label className="text-slate-700">Select PO Number <span className="text-red-500">*</span></Label>
@@ -492,9 +495,10 @@ export function DeliveryPage() {
                       )}
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+                    </div> {/* End scrollable area */}
+                    <div className="p-5 border-t border-slate-100 bg-white shrink-0 flex justify-end gap-3">
                       <Button type="button" variant="ghost" onClick={() => setIsDeliveredDialogOpen(false)} className="text-slate-600">Cancel</Button>
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Confirm Receipt</Button>
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Save Received Delivery</Button>
                     </div>
                   </form>
                 </DialogContent>
