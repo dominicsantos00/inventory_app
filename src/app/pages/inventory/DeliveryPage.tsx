@@ -406,6 +406,7 @@ export function DeliveryPage() {
                         {!isEndUser && (
                           <TableCell className="text-right">
                               <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* FIX: Using handleDeletePendingPO instead of direct delete */}
                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDeletePendingPO(item.id, item.poNumber)}><Trash2 className="h-4 w-4" /></Button>
                               </div>
                           </TableCell>
@@ -577,6 +578,7 @@ export function DeliveryPage() {
                           {!isEndUser && (
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* FIX: Using handleDeleteDelivered instead of direct delete */}
                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDeleteDelivered(d.id, d.receiptNumber || d.poNumber || 'Record')}><Trash2 className="h-4 w-4" /></Button>
                               </div>
                             </TableCell>
